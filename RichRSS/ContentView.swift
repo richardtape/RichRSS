@@ -319,13 +319,42 @@ struct ArticleDetailView: View {
         print("📱 ArticleDetailView.body: article='\(article.title)', dragState=\(dragState), incomingArticle=\(incomingArticle?.title ?? "nil"), currentTranslation=\(currentTranslation)")
 
         return VStack(spacing: 0) {
-            // Fixed header - only show when viewing a real article, not boundary views
-            if !showingEndOfFeed && !showingBeginningOfFeed {
+            // Fixed header - always show, but hide content on boundary views
+            if showingEndOfFeed || showingBeginningOfFeed {
+                // Empty header placeholder for boundary views
+                HStack(spacing: 12) {
+                    Button(action: { showingArticle = false }) {
+                        HStack(spacing: 4) {
+                            Image(systemName: "chevron.left")
+                                .font(.system(size: 16, weight: .semibold))
+                            Text("Back")
+                        }
+                        .foregroundColor(.blue)
+                    }
+
+                    Spacer()
+
+                    VStack(alignment: .trailing, spacing: 2) {
+                        Text("")  // Empty
+                            .font(.caption)
+                            .fontWeight(.semibold)
+                            .foregroundColor(.blue)
+                        HStack(spacing: 8) {
+                            Text("")  // Empty
+                                .font(.caption2)
+                                .foregroundColor(.gray)
+                        }
+                    }
+                }
+                .padding(12)
+                .background(Color(.systemBackground))
+            } else {
+                // Real header with article info
                 ArticleHeaderView(article: article, onBack: { showingArticle = false })
                     .id(article.uniqueId)  // Force fade transition when article changes
-
-                Divider()
             }
+
+            Divider()
 
             // Swipeable content area
             GeometryReader { geometry in
@@ -335,9 +364,47 @@ struct ArticleDetailView: View {
                     // LAYER 1: Current Article or Boundary View
                     // ALWAYS at center (x=0), NEVER moves
                     if showingEndOfFeed {
-                        EndOfFeedView(theme: theme, onDismiss: { showingArticle = false })
+                        EndOfFeedView(
+                            theme: theme,
+                            currentTranslation: $currentTranslation,
+                            screenWidth: screenWidth,
+                            onDismiss: { showingArticle = false },
+                            onSwipeBack: {
+                                // Swiping right on end of feed - show last article
+                                let targetTranslation: CGFloat = screenWidth
+                                withAnimation(.easeInOut(duration: 0.3)) {
+                                    currentTranslation = targetTranslation
+                                }
+                                DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                                    showingEndOfFeed = false
+                                    selectedArticle = incomingArticle
+                                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                                        resetGestureState()
+                                    }
+                                }
+                            }
+                        )
                     } else if showingBeginningOfFeed {
-                        BeginningOfFeedView(theme: theme, onDismiss: { showingBeginningOfFeed = false })
+                        BeginningOfFeedView(
+                            theme: theme,
+                            currentTranslation: $currentTranslation,
+                            screenWidth: screenWidth,
+                            onDismiss: { showingBeginningOfFeed = false },
+                            onSwipeBack: {
+                                // Swiping left on beginning of feed - show first article
+                                let targetTranslation: CGFloat = -screenWidth
+                                withAnimation(.easeInOut(duration: 0.3)) {
+                                    currentTranslation = targetTranslation
+                                }
+                                DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                                    showingBeginningOfFeed = false
+                                    selectedArticle = incomingArticle
+                                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                                        resetGestureState()
+                                    }
+                                }
+                            }
+                        )
                     } else {
                         ArticleDetailViewContent(
                             article: article,
@@ -366,7 +433,8 @@ struct ArticleDetailView: View {
                                 swipeDirection = 1
                                 // Check if we're at the first article
                                 if !hasPrevious {
-                                    boundaryAction = "goBackToList"
+                                    print("📱 Dragging right on FIRST article - showing beginning boundary")
+                                    boundaryAction = "beginning"
                                     incomingArticle = nil
                                 } else {
                                     boundaryAction = nil
@@ -403,6 +471,9 @@ struct ArticleDetailView: View {
                                     DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
                                         showingEndOfFeed = true
                                         resetGestureState()
+                                        // Set up incoming article for the boundary view to show on swipe back
+                                        incomingArticle = allArticles[currentIndex]
+                                        swipeDirection = 1
                                     }
                                 } else if boundaryAction == "beginning" {
                                     // First article - show beginning of feed message as current
@@ -417,6 +488,9 @@ struct ArticleDetailView: View {
                                     DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
                                         showingBeginningOfFeed = true
                                         resetGestureState()
+                                        // Set up incoming article for the boundary view to show on swipe back
+                                        incomingArticle = allArticles[currentIndex]
+                                        swipeDirection = -1
                                     }
                                 } else if incomingArticle != nil {
                                     // Normal swipe to next/previous article
@@ -467,12 +541,24 @@ struct ArticleDetailView: View {
                         .offset(x: swipeDirection == -1 ? (screenWidth + currentTranslation) : (-screenWidth + currentTranslation))
                     } else if boundaryAction == "endOfFeed" {
                         // Show end of feed message (draggable like a real post)
-                        EndOfFeedView(theme: theme, onDismiss: { showingArticle = false })
-                            .offset(x: screenWidth + currentTranslation)
+                        EndOfFeedView(
+                            theme: theme,
+                            currentTranslation: .constant(currentTranslation),
+                            screenWidth: screenWidth,
+                            onDismiss: { showingArticle = false },
+                            onSwipeBack: {}
+                        )
+                        .offset(x: screenWidth + currentTranslation)
                     } else if boundaryAction == "beginning" {
                         // Show beginning of feed message (draggable like a real post)
-                        BeginningOfFeedView(theme: theme, onDismiss: { })
-                            .offset(x: -screenWidth + currentTranslation)
+                        BeginningOfFeedView(
+                            theme: theme,
+                            currentTranslation: .constant(currentTranslation),
+                            screenWidth: screenWidth,
+                            onDismiss: { },
+                            onSwipeBack: {}
+                        )
+                        .offset(x: -screenWidth + currentTranslation)
                     }
                 }
             }
@@ -498,7 +584,10 @@ struct ArticleDetailView: View {
 
 struct EndOfFeedView: View {
     let theme: Theme
+    @Binding var currentTranslation: CGFloat
+    let screenWidth: CGFloat
     let onDismiss: () -> Void
+    let onSwipeBack: () -> Void
 
     var body: some View {
         VStack(spacing: 30) {
@@ -535,12 +624,33 @@ struct EndOfFeedView: View {
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(theme.backgroundColor)
         .foregroundColor(theme.textColor)
+        .gesture(
+            DragGesture()
+                .onChanged { value in
+                    currentTranslation = value.translation.width
+                }
+                .onEnded { value in
+                    let threshold = screenWidth * 0.4
+                    if value.translation.width > threshold {
+                        // Swiped right - go back to last article
+                        onSwipeBack()
+                    } else {
+                        // Bounce back
+                        withAnimation(.easeInOut(duration: 0.3)) {
+                            currentTranslation = 0
+                        }
+                    }
+                }
+        )
     }
 }
 
 struct BeginningOfFeedView: View {
     let theme: Theme
+    @Binding var currentTranslation: CGFloat
+    let screenWidth: CGFloat
     let onDismiss: () -> Void
+    let onSwipeBack: () -> Void
 
     var body: some View {
         VStack(spacing: 30) {
@@ -572,7 +682,7 @@ struct BeginningOfFeedView: View {
                         .cornerRadius(8)
                 }
 
-                Text("or swipe right to return")
+                Text("or swipe left to return")
                     .font(.caption)
                     .foregroundColor(.secondary)
             }
@@ -583,6 +693,24 @@ struct BeginningOfFeedView: View {
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(theme.backgroundColor)
         .foregroundColor(theme.textColor)
+        .gesture(
+            DragGesture()
+                .onChanged { value in
+                    currentTranslation = value.translation.width
+                }
+                .onEnded { value in
+                    let threshold = screenWidth * 0.4
+                    if value.translation.width < -threshold {
+                        // Swiped left - go back to first article
+                        onSwipeBack()
+                    } else {
+                        // Bounce back
+                        withAnimation(.easeInOut(duration: 0.3)) {
+                            currentTranslation = 0
+                        }
+                    }
+                }
+        )
     }
 }
 
