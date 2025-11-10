@@ -1,0 +1,10 @@
+/* Dark Theme Variables */
+:root {
+    --bg-color: #1c1c1e;
+    --text-color: #ffffff;
+    --text-secondary: #b3b3b3;
+    --accent-color: #66b3ff;
+    --border-color: #333333;
+    --code-bg: #2d2d2d;
+    --blockquote-bg: #264666;
+}

@@ -1,0 +1,10 @@
+/* Sepia Theme Variables */
+:root {
+    --bg-color: #faf6f1;
+    --text-color: #3e3d38;
+    --text-secondary: #7f7d76;
+    --accent-color: #b87d2b;
+    --border-color: #e8dcc8;
+    --code-bg: #f2ede3;
+    --blockquote-bg: #e8dcc8;
+}
