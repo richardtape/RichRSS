@@ -339,10 +339,24 @@ struct ArticleDetailView: View {
                             // Determine direction from translation
                             if translation < 0 {
                                 swipeDirection = -1
-                                incomingArticle = hasNext ? allArticles[currentIndex + 1] : nil
+                                let nextArticle = hasNext ? allArticles[currentIndex + 1] : nil
+                                incomingArticle = nextArticle
+                                // Pre-cache the HTML so images load faster
+                                if let next = nextArticle {
+                                    DispatchQueue.global(qos: .userInitiated).async {
+                                        _ = ArticleHTMLCache.shared.getCachedHTML(for: next)
+                                    }
+                                }
                             } else if translation > 0 {
                                 swipeDirection = 1
-                                incomingArticle = hasPrevious ? allArticles[currentIndex - 1] : nil
+                                let prevArticle = hasPrevious ? allArticles[currentIndex - 1] : nil
+                                incomingArticle = prevArticle
+                                // Pre-cache the HTML so images load faster
+                                if let prev = prevArticle {
+                                    DispatchQueue.global(qos: .userInitiated).async {
+                                        _ = ArticleHTMLCache.shared.getCachedHTML(for: prev)
+                                    }
+                                }
                             }
 
                             // Check threshold (40% of screen)

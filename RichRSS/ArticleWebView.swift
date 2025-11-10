@@ -32,20 +32,25 @@ struct ArticleWebView: UIViewRepresentable {
     }
 
     func updateUIView(_ container: WebViewContainer, context: Context) {
-        // Only reload HTML if the article has changed
-        if container.currentArticleId != article.uniqueId {
-            // Try to get cached HTML first
+        let themeStyle = theme.style.name
+
+        // Reload HTML if the article changed OR the theme changed
+        if container.currentArticleId != article.uniqueId || container.currentThemeStyle != themeStyle {
+            // Try to get cached HTML, but only if the theme matches
+            // (cache includes theme-specific CSS, so theme mismatch requires regeneration)
             let htmlContent: String
-            if let cachedHTML = ArticleHTMLCache.shared.getCachedHTML(for: article) {
+            if container.currentThemeStyle == themeStyle,
+               let cachedHTML = ArticleHTMLCache.shared.getCachedHTML(for: article) {
                 htmlContent = cachedHTML
             } else {
-                // Generate and cache the HTML
+                // Generate and cache the HTML (with current theme CSS)
                 htmlContent = generateHTMLContent()
                 ArticleHTMLCache.shared.cacheHTML(htmlContent, for: article)
             }
 
             container.webView.loadHTMLString(htmlContent, baseURL: nil)
             container.currentArticleId = article.uniqueId
+            container.currentThemeStyle = themeStyle
         }
 
         // Always update the callbacks so they have the latest closures
@@ -130,6 +135,7 @@ class WebViewContainer: UIView {
     var onPanChanged: ((CGFloat) -> Void)?
     var onGestureEnded: ((CGFloat) -> Void)?  // Pass final translation value
     var currentArticleId: String?  // Track which article is currently loaded
+    var currentThemeStyle: String?  // Track which theme is currently loaded
     private var isHorizontalPan = false
     private var initialLocation: CGPoint = .zero
 
