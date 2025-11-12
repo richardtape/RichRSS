@@ -14,6 +14,8 @@
   --blockquote-border-color: #4a7aad;
   --success-color: #34c759;
   --error-color: #ff3b30;
+  --pill-background: #1a3a52;
+  --pill-text-color: #66b3ff;
 
   /* Typography Overrides (Dark theme uses standard sizes) */
   --font-size-title: 28px;

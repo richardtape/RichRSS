@@ -16,6 +16,7 @@ final class Feed {
     var siteUrl: String?
     var feedSummary: String?
     var lastUpdated: Date?
+    var faviconUrl: String?
 
     init(
         id: String,
@@ -23,7 +24,8 @@ final class Feed {
         feedUrl: String,
         siteUrl: String? = nil,
         feedSummary: String? = nil,
-        lastUpdated: Date? = nil
+        lastUpdated: Date? = nil,
+        faviconUrl: String? = nil
     ) {
         self.id = id
         self.title = title
@@ -31,5 +33,6 @@ final class Feed {
         self.siteUrl = siteUrl
         self.feedSummary = feedSummary
         self.lastUpdated = lastUpdated
+        self.faviconUrl = faviconUrl
     }
 }

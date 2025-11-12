@@ -11,11 +11,30 @@ import SwiftData
 struct FeedsView: View {
     @Environment(\.modelContext) private var modelContext
     @Query(sort: \Feed.title) private var feeds: [Feed]
+    @Query(sort: \Article.pubDate, order: .reverse) private var articles: [Article]
+    @AppStorage("selectedThemeStyle") private var selectedThemeStyle: String = "light"
     @State private var showAddFeed = false
     @State private var feedURL = ""
     @State private var feedTitle = ""
     @State private var isLoading = false
     @State private var errorMessage: String?
+
+    var currentTheme: Theme {
+        let style: ThemeStyle
+        switch selectedThemeStyle {
+        case "dark":
+            style = .dark
+        case "sepia":
+            style = .sepia
+        default:
+            style = .light
+        }
+        return Theme(style: style)
+    }
+
+    func unreadCount(for feed: Feed) -> Int {
+        articles.filter { $0.feedTitle == feed.title && !$0.isRead }.count
+    }
 
     var body: some View {
         NavigationStack {
@@ -38,18 +57,48 @@ struct FeedsView: View {
                 } else {
                     List {
                         ForEach(feeds) { feed in
-                            VStack(alignment: .leading, spacing: 8) {
-                                Text(feed.title)
-                                    .font(.headline)
-                                Text(feed.feedUrl)
-                                    .font(.caption)
-                                    .foregroundColor(.secondary)
-                                    .lineLimit(1)
-                                if let lastUpdated = feed.lastUpdated {
-                                    Text("Last updated: \(lastUpdated, style: .date)")
-                                        .font(.caption2)
+                            HStack(alignment: .top, spacing: 12) {
+                                // Icon column (36x36)
+                                FaviconView(faviconUrl: feed.faviconUrl, feedTitle: feed.title)
+                                    .frame(width: 36, height: 36)
+
+                                // Feed Info
+                                VStack(alignment: .leading, spacing: 6) {
+                                    Text(feed.title)
+                                        .font(.headline)
+                                    Text(feed.feedUrl)
+                                        .font(.caption)
                                         .foregroundColor(.secondary)
+                                        .lineLimit(1)
+
+                                    // Last updated + unread count
+                                    let count = unreadCount(for: feed)
+                                    HStack(spacing: 6) {
+                                        if let lastUpdated = feed.lastUpdated {
+                                            Text("Last updated: \(lastUpdated, style: .date)")
+                                                .font(.caption2)
+                                                .foregroundColor(.secondary)
+                                        }
+
+                                        if count > 0 {
+                                            Text("•")
+                                                .font(.caption2)
+                                                .foregroundColor(.secondary)
+
+                                            HStack(spacing: 2) {
+                                                Text("\(count) unread")
+                                            }
+                                            .font(.caption2)
+                                            .fontWeight(.semibold)
+                                            .foregroundColor(currentTheme.pillTextColor)
+                                            .padding(.horizontal, 6)
+                                            .padding(.vertical, 2)
+                                            .background(currentTheme.pillBackgroundColor)
+                                            .cornerRadius(4)
+                                        }
+                                    }
                                 }
+                                .frame(maxWidth: .infinity, alignment: .leading)
                             }
                             .padding(.vertical, 8)
                         }
@@ -87,13 +136,22 @@ struct FeedsView: View {
             do {
                 let articles = try await FeedFetcher.shared.fetchFeed(from: url, feedTitle: title)
 
+                // Fetch favicon (don't block on this)
+                let siteUrl = try? extractSiteUrl(from: url)
+                let faviconUrl = await FaviconFetcher.shared.fetchFaviconUrl(
+                    feedImageUrl: articles.first?.imageUrl,
+                    siteUrl: siteUrl
+                )
+
                 await MainActor.run {
                     // Create and insert the feed
                     let feed = Feed(
                         id: UUID().uuidString,
                         title: title,
                         feedUrl: url,
-                        lastUpdated: Date()
+                        siteUrl: siteUrl,
+                        lastUpdated: Date(),
+                        faviconUrl: faviconUrl
                     )
                     modelContext.insert(feed)
 
@@ -114,12 +172,89 @@ struct FeedsView: View {
         }
     }
 
+    private func extractSiteUrl(from feedUrl: String) throws -> String {
+        guard let url = URL(string: feedUrl) else {
+            throw NSError(domain: "FeedsView", code: -1, userInfo: [NSLocalizedDescriptionKey: "Invalid URL"])
+        }
+
+        if let scheme = url.scheme, let host = url.host {
+            return "\(scheme)://\(host)"
+        }
+
+        throw NSError(domain: "FeedsView", code: -1, userInfo: [NSLocalizedDescriptionKey: "Could not extract site URL"])
+    }
+
     private func deleteFeeds(offsets: IndexSet) {
         for index in offsets {
             let feed = feeds[index]
             modelContext.delete(feed)
         }
     }
+}
+
+// MARK: - FaviconView
+
+struct FaviconView: View {
+    let faviconUrl: String?
+    let feedTitle: String
+    @State private var faviconImage: UIImage?
+    @State private var isLoading = false
+
+    var firstLetter: String {
+        feedTitle.prefix(1).uppercased()
+    }
+
+    var body: some View {
+        ZStack {
+            // Background circle
+            Circle()
+                .fill(Color.blue.opacity(0.2))
+
+            if let faviconImage = faviconImage {
+                // Display favicon image
+                Image(uiImage: faviconImage)
+                    .resizable()
+                    .scaledToFill()
+                    .clipShape(Circle())
+            } else {
+                // Fallback: First letter in circle
+                Text(firstLetter)
+                    .font(.system(size: 20, weight: .bold))
+                    .foregroundColor(.blue)
+            }
+        }
+        .task {
+            await loadFavicon()
+        }
+    }
+
+    private func loadFavicon() async {
+        guard let faviconUrl = faviconUrl, !faviconUrl.isEmpty else {
+            return
+        }
+
+        guard let url = URL(string: faviconUrl) else {
+            return
+        }
+
+        do {
+            let (data, response) = try await URLSession.shared.data(from: url)
+
+            if let httpResponse = response as? HTTPURLResponse,
+               (200...299).contains(httpResponse.statusCode),
+               let image = UIImage(data: data) {
+                await MainActor.run {
+                    self.faviconImage = image
+                }
+            }
+        } catch {
+            print("Failed to load favicon from \(faviconUrl): \(error)")
+        }
+    }
+}
+
+#Preview {
+    FaviconView(faviconUrl: nil, feedTitle: "BBC News")
 }
 
 #Preview {

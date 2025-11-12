@@ -58,6 +58,14 @@ extension Theme {
         extractColor(variable: "--error-color") ?? Color.red
     }
 
+    var pillBackgroundColor: Color {
+        extractColor(variable: "--pill-background") ?? Color.blue.opacity(0.1)
+    }
+
+    var pillTextColor: Color {
+        extractColor(variable: "--pill-text-color") ?? Color.blue
+    }
+
     // MARK: - Typography (Font Sizes in points)
 
     var fontSizeTitle: CGFloat {

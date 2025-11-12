@@ -14,6 +14,8 @@
   --blockquote-border-color: #d4c5ad;
   --success-color: #34c759;
   --error-color: #ff3b30;
+  --pill-background: #ede5d8;
+  --pill-text-color: #b87d2b;
 
   /* Typography Overrides (Sepia theme uses standard sizes) */
   --font-size-title: 28px;
