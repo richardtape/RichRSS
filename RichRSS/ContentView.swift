@@ -154,15 +154,8 @@ struct ArticlesListViewWithSelection: View {
             } else {
                 VStack(spacing: 0) {
                     // Header
-                    VStack(alignment: .leading, spacing: 12) {
-                        HStack {
-                            // Left column: Title
-                            Text("All Feeds")
-                                .font(.system(size: 33, weight: .bold))
-
-                            Spacer()
-
-                            // Right column: Filter icon
+                    TabHeaderView("All Feeds") {
+                        AnyView(
                             Menu {
                                 Section {
                                     Button(action: { filterMode = .showAll }) {
@@ -193,11 +186,8 @@ struct ArticlesListViewWithSelection: View {
                                     .font(.system(size: 20))
                                     .foregroundColor(.blue)
                             }
-                        }
-                        .padding(.horizontal, 12)
-                        .padding(.vertical, 12)
+                        )
                     }
-                    .background(Color(.systemBackground))
                     .confirmationDialog(
                         "Mark all as read?",
                         isPresented: $showingMarkAllConfirmation,

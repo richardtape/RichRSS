@@ -39,6 +39,17 @@ struct FeedsView: View {
     var body: some View {
         NavigationStack {
             VStack(spacing: 0) {
+                // Header with add feed button
+                TabHeaderView("Feeds") {
+                    AnyView(
+                        Button(action: { showAddFeed = true }) {
+                            Image(systemName: "plus.circle.fill")
+                                .font(.system(size: 20, weight: .semibold))
+                                .foregroundColor(.blue)
+                        }
+                    )
+                }
+
                 if feeds.isEmpty {
                     VStack(spacing: 20) {
                         Spacer()
@@ -106,15 +117,6 @@ struct FeedsView: View {
                     }
                     .listStyle(.plain)
                     .scrollContentBackground(.hidden)
-                }
-            }
-            .navigationTitle("Feeds")
-            .toolbar {
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    Button(action: { showAddFeed = true }) {
-                        Image(systemName: "plus.circle.fill")
-                            .font(.system(size: 18, weight: .semibold))
-                    }
                 }
             }
             .sheet(isPresented: $showAddFeed) {

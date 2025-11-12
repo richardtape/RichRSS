@@ -15,38 +15,42 @@ struct SettingsView: View {
 
     var body: some View {
         NavigationStack {
-            Form {
-                Section("Appearance") {
-                    Picker("Theme", selection: $selectedThemeStyle) {
-                        Text("Light").tag("light")
-                        Text("Dark").tag("dark")
-                        Text("Sepia").tag("sepia")
-                    }
-                }
+            VStack(spacing: 0) {
+                // Header
+                TabHeaderView("Settings")
 
-                Section("About") {
-                    HStack {
-                        Text("Version")
-                        Spacer()
-                        Text("1.0")
-                            .foregroundColor(.gray)
+                Form {
+                    Section("Appearance") {
+                        Picker("Theme", selection: $selectedThemeStyle) {
+                            Text("Light").tag("light")
+                            Text("Dark").tag("dark")
+                            Text("Sepia").tag("sepia")
+                        }
                     }
-                }
 
-                Section("Data") {
-                    Button(role: .destructive, action: { showResetConfirmation = true }) {
-                        Label("Remove Everything", systemImage: "trash.fill")
+                    Section("About") {
+                        HStack {
+                            Text("Version")
+                            Spacer()
+                            Text("1.0")
+                                .foregroundColor(.gray)
+                        }
+                    }
+
+                    Section("Data") {
+                        Button(role: .destructive, action: { showResetConfirmation = true }) {
+                            Label("Remove Everything", systemImage: "trash.fill")
+                        }
                     }
                 }
-            }
-            .navigationTitle("Settings")
-            .alert("Remove Everything?", isPresented: $showResetConfirmation) {
+                .alert("Remove Everything?", isPresented: $showResetConfirmation) {
                 Button("Cancel", role: .cancel) { }
                 Button("Remove All Data", role: .destructive) {
                     resetAllData()
                 }
-            } message: {
-                Text("This will delete all feeds, articles, and reset your settings. This cannot be undone.")
+                } message: {
+                    Text("This will delete all feeds, articles, and reset your settings. This cannot be undone.")
+                }
             }
         }
     }
