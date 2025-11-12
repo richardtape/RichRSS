@@ -87,8 +87,10 @@ struct ArticleWebView: UIViewRepresentable {
         }
 
         // Load CSS files from bundle
+        // 1. Components: Base structure + all HTML styling + default variables
+        // 2. Theme variables: Color/typography/spacing overrides for specific theme
+        let componentsCSS = loadCSS(filename: "components") ?? ""
         let themeVariablesCSS = loadCSS(filename: theme.variablesFileName) ?? ""
-        let articleCSS = loadCSS(filename: "article") ?? ""
 
         // Build HTML document with our CSS
         let html = """
@@ -98,8 +100,8 @@ struct ArticleWebView: UIViewRepresentable {
             <meta charset="UTF-8">
             <meta name="viewport" content="width=device-width, initial-scale=1.0">
             <style>
+            \(componentsCSS)
             \(themeVariablesCSS)
-            \(articleCSS)
             </style>
         </head>
         <body>

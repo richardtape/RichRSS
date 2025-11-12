@@ -67,6 +67,23 @@ struct HTMLStripper {
         return result
     }
 
+    /// Generates an excerpt from HTML content
+    /// - Takes first ~20 words of plain text
+    /// - Strips HTML tags first
+    /// - Returns cleaned excerpt suitable for list display
+    static func generateExcerpt(from htmlContent: String, wordCount: Int = 20) -> String {
+        let plainText = stripHTML(htmlContent)
+
+        // Split into words and take the first N
+        let words = plainText.split(separator: " ", omittingEmptySubsequences: true)
+        let excerptWords = words.prefix(wordCount)
+        let excerpt = excerptWords.joined(separator: " ")
+
+        // Add ellipsis if there are more words
+        let hasMore = words.count > wordCount
+        return excerpt + (hasMore ? "…" : "")
+    }
+
     private static func decodeHTMLEntities(_ html: String) -> String {
         var result = html
 

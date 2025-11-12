@@ -82,32 +82,139 @@ struct ContentView: View {
 struct ArticlesListViewWithSelection: View {
     @Environment(\.modelContext) private var modelContext
     @Query(sort: \Article.pubDate, order: .reverse) private var articles: [Article]
+    @Query private var feeds: [Feed]
     let theme: Theme
     @Binding var selectedArticle: Article?
     @Binding var showingArticle: Bool
+    @State private var isRefreshing = false
+    @State private var lastRefreshTime: Date?
+    @State private var filterMode: FilterMode = .unreadOnly
+    @State private var showingMarkAllConfirmation = false
+
+    enum FilterMode {
+        case showAll
+        case unreadOnly
+    }
+
+    var filteredArticles: [Article] {
+        switch filterMode {
+        case .showAll:
+            return articles
+        case .unreadOnly:
+            return articles.filter { !$0.isRead }
+        }
+    }
 
     var body: some View {
         NavigationStack {
-            VStack(spacing: 0) {
-                if articles.isEmpty {
-                    VStack(spacing: 20) {
-                        Spacer()
-                        Image(systemName: "newspaper.fill")
-                            .font(.system(size: 64))
-                            .foregroundColor(.blue)
-                            .opacity(0.3)
-                        Text("No Articles Yet")
-                            .font(.system(size: 24, weight: .bold, design: .default))
-                        Text("Add an RSS feed to get started")
-                            .font(.subheadline)
-                            .foregroundColor(.secondary)
-                        Spacer()
+            if articles.isEmpty {
+                VStack(spacing: 20) {
+                    Spacer()
+                    Image(systemName: "newspaper.fill")
+                        .font(.system(size: 64))
+                        .foregroundColor(.blue)
+                        .opacity(0.3)
+                    Text("No Articles Yet")
+                        .font(.system(size: 24, weight: .bold, design: .default))
+                    Text("Add an RSS feed to get started")
+                        .font(.subheadline)
+                        .foregroundColor(.secondary)
+                    Spacer()
+                }
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .background(Color(.systemBackground))
+            } else if filteredArticles.isEmpty && filterMode == .unreadOnly {
+                VStack(spacing: 20) {
+                    Spacer()
+                    Image(systemName: "checkmark.circle.fill")
+                        .font(.system(size: 64))
+                        .foregroundColor(.green)
+                        .opacity(0.3)
+                    Text("All Caught Up!")
+                        .font(.system(size: 24, weight: .bold, design: .default))
+                    Text("You've read all your articles")
+                        .font(.subheadline)
+                        .foregroundColor(.secondary)
+
+                    Button(action: { filterMode = .showAll }) {
+                        Text("Show Read Posts")
+                            .fontWeight(.semibold)
+                            .padding(.vertical, 8)
+                            .padding(.horizontal, 16)
+                            .background(Color.blue)
+                            .foregroundColor(.white)
+                            .cornerRadius(6)
                     }
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    .padding(.top, 16)
+
+                    Spacer()
+                }
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .background(Color(.systemBackground))
+            } else {
+                VStack(spacing: 0) {
+                    // Header
+                    VStack(alignment: .leading, spacing: 12) {
+                        HStack {
+                            // Left column: Title
+                            Text("All Feeds")
+                                .font(.system(size: 33, weight: .bold))
+
+                            Spacer()
+
+                            // Right column: Filter icon
+                            Menu {
+                                Section {
+                                    Button(action: { filterMode = .showAll }) {
+                                        HStack {
+                                            Image(systemName: filterMode == .showAll ? "checkmark.circle.fill" : "circle")
+                                            Text("Show All")
+                                        }
+                                    }
+
+                                    Button(action: { filterMode = .unreadOnly }) {
+                                        HStack {
+                                            Image(systemName: filterMode == .unreadOnly ? "checkmark.circle.fill" : "circle")
+                                            Text("Unread only")
+                                        }
+                                    }
+                                }
+
+                                Divider()
+
+                                Button(role: .destructive, action: { showingMarkAllConfirmation = true }) {
+                                    HStack {
+                                        Image(systemName: "checkmark.square.fill")
+                                        Text("Mark all as read")
+                                    }
+                                }
+                            } label: {
+                                Image(systemName: "line.3.horizontal.decrease.circle")
+                                    .font(.system(size: 20))
+                                    .foregroundColor(.blue)
+                            }
+                        }
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 12)
+                    }
                     .background(Color(.systemBackground))
-                } else {
+                    .confirmationDialog(
+                        "Mark all as read?",
+                        isPresented: $showingMarkAllConfirmation,
+                        actions: {
+                            Button("Mark all as read", role: .destructive) {
+                                markAllAsRead()
+                            }
+                            Button("Cancel", role: .cancel) {}
+                        },
+                        message: {
+                            Text("This will mark all articles as read.")
+                        }
+                    )
+
+                    // List
                     List {
-                        ForEach(articles, id: \.uniqueId) { article in
+                        ForEach(filteredArticles, id: \.uniqueId) { article in
                             Button(action: {
                                 selectedArticle = article
                                 showingArticle = true
@@ -121,9 +228,50 @@ struct ArticlesListViewWithSelection: View {
                     }
                     .listStyle(.plain)
                     .scrollContentBackground(.hidden)
+                    .refreshable {
+                        await refreshAllFeeds()
+                    }
                 }
             }
-            .navigationTitle("Articles")
+        }
+        .navigationTitle("Articles")
+    }
+
+    private func refreshAllFeeds() async {
+        print("🔄 Starting feed refresh...")
+        do {
+            let feedsToRefresh = feeds
+            if feedsToRefresh.isEmpty {
+                print("⚠️ No feeds to refresh")
+                return
+            }
+
+            let results = try await FeedFetcher.shared.refreshAllFeeds(feeds: feedsToRefresh)
+
+            await MainActor.run {
+                // Add new articles from each feed
+                for (feedId, newArticles) in results {
+                    let feedTitle = feeds.first(where: { $0.id == feedId })?.title ?? ""
+                    let existingGuids = Set(articles.filter { $0.feedTitle == feedTitle }.compactMap { $0.guid })
+
+                    for article in newArticles {
+                        // Only add if not already present (avoid duplicates)
+                        if !existingGuids.contains(article.guid ?? "") {
+                            modelContext.insert(article)
+                        }
+                    }
+                }
+
+                // Update feed's lastUpdated timestamp
+                for feed in feeds {
+                    feed.lastUpdated = Date()
+                }
+
+                lastRefreshTime = Date()
+                print("✅ Feed refresh completed. Added new articles.")
+            }
+        } catch {
+            print("❌ Feed refresh failed: \(error.localizedDescription)")
         }
     }
 
@@ -134,87 +282,105 @@ struct ArticlesListViewWithSelection: View {
             }
         }
     }
+
+    private func markAllAsRead() {
+        for article in articles {
+            article.isRead = true
+        }
+    }
 }
 
 struct ArticleListItemView: View {
     let article: Article
 
-    var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            // Feed badge
-            HStack {
-                Text(article.feedTitle)
-                    .font(.caption)
-                    .fontWeight(.semibold)
-                    .foregroundColor(.blue)
-                    .padding(.horizontal, 8)
-                    .padding(.vertical, 4)
-                    .background(Color.blue.opacity(0.1))
-                    .cornerRadius(6)
-                Spacer()
-                Text(relativeDate(article.pubDate))
-                    .font(.caption2)
-                    .foregroundColor(.gray)
-            }
+    var excerpt: String {
+        if !article.summary.isEmpty {
+            return HTMLStripper.stripHTML(article.summary)
+        } else if let content = article.content, !content.isEmpty {
+            return HTMLStripper.generateExcerpt(from: content, wordCount: 20)
+        } else {
+            return ""
+        }
+    }
 
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
             // Title
             Text(article.title)
                 .font(.system(.headline, design: .default))
                 .fontWeight(.semibold)
                 .lineLimit(3)
                 .tracking(-0.3)
+                .foregroundColor(.primary)
 
-            // Description
-            if !article.summary.isEmpty {
-                let cleanSummary = HTMLStripper.stripHTML(article.summary)
-                if !cleanSummary.isEmpty {
-                    Text(cleanSummary)
-                        .font(.subheadline)
-                        .foregroundColor(.secondary)
-                        .lineLimit(2)
-                        .lineSpacing(0.5)
-                }
+            // Excerpt/Summary (max 3 lines)
+            if !excerpt.isEmpty {
+                Text(excerpt)
+                    .font(.subheadline)
+                    .foregroundColor(.secondary)
+                    .lineLimit(3)
+                    .lineSpacing(0.5)
             }
 
-            // Meta info
-            HStack(spacing: 12) {
-                if let author = article.author {
-                    Label(author, systemImage: "person.fill")
-                        .font(.caption)
-                        .foregroundColor(.gray)
-                }
-                if article.isRead {
-                    Image(systemName: "checkmark.circle.fill")
-                        .font(.caption)
-                        .foregroundColor(.green)
-                }
+            // Meta row: Feed Title • Relative Time
+            HStack(spacing: 6) {
+                Text(article.feedTitle)
+                    .font(.caption2)
+                    .foregroundColor(.secondary)
+
+                Text("•")
+                    .font(.caption2)
+                    .foregroundColor(.secondary)
+
+                Text(relativeTime(article.pubDate))
+                    .font(.caption2)
+                    .foregroundColor(.secondary)
+
+                Spacer()
             }
+
+            // Divider
+            Divider()
+                .padding(.top, 4)
         }
         .padding(.vertical, 12)
         .padding(.horizontal, 12)
-        .background(Color(.systemBackground))
     }
 
-    private func relativeDate(_ date: Date) -> String {
-        let calendar = Calendar.current
+    /// Returns relative time in format: "< 1hr ago", "2h ago", "3d ago", etc.
+    private func relativeTime(_ date: Date) -> String {
         let now = Date()
+        let intervalSeconds = now.timeIntervalSince(date)
 
-        if calendar.isDateInToday(date) {
-            let formatter = DateFormatter()
-            formatter.timeStyle = .short
-            return formatter.string(from: date)
-        } else if calendar.isDateInYesterday(date) {
-            return "Yesterday"
-        } else {
-            let daysDifference = calendar.dateComponents([.day], from: date, to: now).day ?? 0
-            if daysDifference < 7 {
-                return "\(daysDifference)d ago"
-            } else {
-                let formatter = DateFormatter()
-                formatter.dateFormat = "MMM d"
-                return formatter.string(from: date)
-            }
+        // Less than 1 hour
+        if intervalSeconds < 3600 {
+            return "< 1hr ago"
         }
+
+        // Less than 24 hours (show in hours)
+        if intervalSeconds < 86400 {
+            let hours = Int(intervalSeconds / 3600)
+            let rounded = max(1, hours)  // Round up to at least 1h
+            return "\(rounded)h ago"
+        }
+
+        // 24+ hours (show in days)
+        let calendar = Calendar.current
+        let days = calendar.dateComponents([.day], from: date, to: now).day ?? 0
+        if days < 7 {
+            return "\(days)d ago"
+        }
+
+        // 7+ days (show in weeks or formatted date)
+        if days < 30 {
+            let weeks = days / 7
+            return "\(weeks)w ago"
+        }
+
+        // Fallback to formatted date
+        let formatter = DateFormatter()
+        formatter.dateFormat = "MMM d"
+        return formatter.string(from: date)
     }
 }
 

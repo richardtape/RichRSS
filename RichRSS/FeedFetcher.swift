@@ -30,4 +30,22 @@ actor FeedFetcher {
             throw error
         }
     }
+
+    /// Fetches all feeds and returns a dictionary of [feedId: articles]
+    func refreshAllFeeds(feeds: [Feed]) async throws -> [String: [Article]] {
+        var results: [String: [Article]] = [:]
+
+        for feed in feeds {
+            do {
+                let articles = try await fetchFeed(from: feed.feedUrl, feedTitle: feed.title)
+                results[feed.id] = articles
+            } catch {
+                print("⚠️ Failed to refresh feed '\(feed.title)': \(error.localizedDescription)")
+                // Continue refreshing other feeds even if one fails
+                results[feed.id] = []
+            }
+        }
+
+        return results
+    }
 }

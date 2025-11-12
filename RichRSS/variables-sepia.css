@@ -1,10 +1,54 @@
 /* Sepia Theme Variables */
 :root {
-    --bg-color: #faf6f1;
-    --text-color: #3e3d38;
-    --text-secondary: #7f7d76;
-    --accent-color: #b87d2b;
-    --border-color: #e8dcc8;
-    --code-bg: #f2ede3;
-    --blockquote-bg: #e8dcc8;
+  /* Color Overrides */
+  --bg-color: #faf6f1;
+  --bg-color-secondary: #f2ede3;
+  --text-color: #3e3d38;
+  --text-color-secondary: #7f7d76;
+  --accent-color: #b87d2b;
+  --accent-color-light: #ede5d8;
+  --border-color: #e8dcc8;
+  --divider-color: #ede5d8;
+  --code-bg-color: #f2ede3;
+  --blockquote-bg-color: #e8dcc8;
+  --blockquote-border-color: #d4c5ad;
+  --success-color: #34c759;
+  --error-color: #ff3b30;
+
+  /* Typography Overrides (Sepia theme uses standard sizes) */
+  --font-size-title: 28px;
+  --font-size-title2: 22px;
+  --font-size-headline: 18px;
+  --font-size-body: 16px;
+  --font-size-subheadline: 15px;
+  --font-size-caption: 14px;
+  --font-size-caption2: 13px;
+
+  --font-weight-regular: 400;
+  --font-weight-semibold: 600;
+  --font-weight-bold: 700;
+
+  --line-height-title: 1.2;
+  --line-height-headline: 1.3;
+  --line-height-body: 1.5;
+  --line-height-caption: 1.4;
+
+  /* Spacing Overrides (Sepia theme uses standard spacing) */
+  --spacing-xs: 4px;
+  --spacing-sm: 8px;
+  --spacing-md: 12px;
+  --spacing-lg: 16px;
+  --spacing-xl: 20px;
+  --spacing-xxl: 24px;
+
+  --list-item-vertical-padding: 12px;
+  --list-item-horizontal-padding: 12px;
+  --list-item-spacing: 8px;
+  --header-padding-vertical: 12px;
+  --header-padding-horizontal: 12px;
+  --meta-spacing: 6px;
+
+  --border-radius: 6px;
+  --border-radius-lg: 8px;
+  --opacity-secondary: 0.6;
 }

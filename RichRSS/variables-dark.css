@@ -1,10 +1,54 @@
 /* Dark Theme Variables */
 :root {
-    --bg-color: #1c1c1e;
-    --text-color: #ffffff;
-    --text-secondary: #b3b3b3;
-    --accent-color: #66b3ff;
-    --border-color: #333333;
-    --code-bg: #2d2d2d;
-    --blockquote-bg: #264666;
+  /* Color Overrides */
+  --bg-color: #1c1c1e;
+  --bg-color-secondary: #2c2c2e;
+  --text-color: #ffffff;
+  --text-color-secondary: #b3b3b3;
+  --accent-color: #66b3ff;
+  --accent-color-light: #1a3a52;
+  --border-color: #333333;
+  --divider-color: #404040;
+  --code-bg-color: #2d2d2d;
+  --blockquote-bg-color: #264666;
+  --blockquote-border-color: #4a7aad;
+  --success-color: #34c759;
+  --error-color: #ff3b30;
+
+  /* Typography Overrides (Dark theme uses standard sizes) */
+  --font-size-title: 28px;
+  --font-size-title2: 22px;
+  --font-size-headline: 18px;
+  --font-size-body: 16px;
+  --font-size-subheadline: 15px;
+  --font-size-caption: 14px;
+  --font-size-caption2: 13px;
+
+  --font-weight-regular: 400;
+  --font-weight-semibold: 600;
+  --font-weight-bold: 700;
+
+  --line-height-title: 1.2;
+  --line-height-headline: 1.3;
+  --line-height-body: 1.5;
+  --line-height-caption: 1.4;
+
+  /* Spacing Overrides (Dark theme uses standard spacing) */
+  --spacing-xs: 4px;
+  --spacing-sm: 8px;
+  --spacing-md: 12px;
+  --spacing-lg: 16px;
+  --spacing-xl: 20px;
+  --spacing-xxl: 24px;
+
+  --list-item-vertical-padding: 12px;
+  --list-item-horizontal-padding: 12px;
+  --list-item-spacing: 8px;
+  --header-padding-vertical: 12px;
+  --header-padding-horizontal: 12px;
+  --meta-spacing: 6px;
+
+  --border-radius: 6px;
+  --border-radius-lg: 8px;
+  --opacity-secondary: 0.6;
 }
