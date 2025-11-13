@@ -13,6 +13,8 @@ struct FeedsView: View {
     @Query(sort: \Feed.title) private var feeds: [Feed]
     @Query(sort: \Article.pubDate, order: .reverse) private var articles: [Article]
     @AppStorage("selectedThemeStyle") private var selectedThemeStyle: String = "light"
+    @Binding var selectedFeedForFilter: Feed?
+    @Binding var selectedTab: Int
     @State private var showAddFeed = false
     @State private var feedURL = ""
     @State private var feedTitle = ""
@@ -68,50 +70,58 @@ struct FeedsView: View {
                 } else {
                     List {
                         ForEach(feeds) { feed in
-                            HStack(alignment: .top, spacing: 12) {
-                                // Icon column (36x36)
-                                FaviconView(faviconUrl: feed.faviconUrl, feedTitle: feed.title)
-                                    .frame(width: 36, height: 36)
+                            Button(action: {
+                                // Set the feed filter and switch to Articles tab
+                                selectedFeedForFilter = feed
+                                selectedTab = 0
+                            }) {
+                                HStack(alignment: .top, spacing: 12) {
+                                    // Icon column (36x36)
+                                    FaviconView(faviconUrl: feed.faviconUrl, feedTitle: feed.title)
+                                        .frame(width: 36, height: 36)
 
-                                // Feed Info
-                                VStack(alignment: .leading, spacing: 6) {
-                                    Text(feed.title)
-                                        .font(.headline)
-                                    Text(feed.feedUrl)
-                                        .font(.caption)
-                                        .foregroundColor(.secondary)
-                                        .lineLimit(1)
+                                    // Feed Info
+                                    VStack(alignment: .leading, spacing: 6) {
+                                        Text(feed.title)
+                                            .font(.headline)
+                                            .foregroundColor(.primary)
+                                        Text(feed.feedUrl)
+                                            .font(.caption)
+                                            .foregroundColor(.secondary)
+                                            .lineLimit(1)
 
-                                    // Last updated + unread count
-                                    let count = unreadCount(for: feed)
-                                    HStack(spacing: 6) {
-                                        if let lastUpdated = feed.lastUpdated {
-                                            Text("Last updated: \(lastUpdated, style: .date)")
-                                                .font(.caption2)
-                                                .foregroundColor(.secondary)
-                                        }
-
-                                        if count > 0 {
-                                            Text("•")
-                                                .font(.caption2)
-                                                .foregroundColor(.secondary)
-
-                                            HStack(spacing: 2) {
-                                                Text("\(count) unread")
+                                        // Last updated + unread count
+                                        let count = unreadCount(for: feed)
+                                        HStack(spacing: 6) {
+                                            if let lastUpdated = feed.lastUpdated {
+                                                Text("Last updated: \(lastUpdated, style: .date)")
+                                                    .font(.caption2)
+                                                    .foregroundColor(.secondary)
                                             }
-                                            .font(.caption2)
-                                            .fontWeight(.semibold)
-                                            .foregroundColor(currentTheme.pillTextColor)
-                                            .padding(.horizontal, 6)
-                                            .padding(.vertical, 2)
-                                            .background(currentTheme.pillBackgroundColor)
-                                            .cornerRadius(4)
+
+                                            if count > 0 {
+                                                Text("•")
+                                                    .font(.caption2)
+                                                    .foregroundColor(.secondary)
+
+                                                HStack(spacing: 2) {
+                                                    Text("\(count) unread")
+                                                }
+                                                .font(.caption2)
+                                                .fontWeight(.semibold)
+                                                .foregroundColor(currentTheme.pillTextColor)
+                                                .padding(.horizontal, 6)
+                                                .padding(.vertical, 2)
+                                                .background(currentTheme.pillBackgroundColor)
+                                                .cornerRadius(4)
+                                            }
                                         }
                                     }
+                                    .frame(maxWidth: .infinity, alignment: .leading)
                                 }
-                                .frame(maxWidth: .infinity, alignment: .leading)
+                                .padding(.vertical, 8)
                             }
-                            .padding(.vertical, 8)
+                            .buttonStyle(PlainButtonStyle())
                         }
                         .onDelete(perform: deleteFeeds)
                     }

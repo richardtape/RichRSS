@@ -13,6 +13,7 @@ struct ContentView: View {
     @AppStorage("selectedThemeStyle") private var selectedThemeStyle: String = "light"
     @State private var selectedArticle: Article?
     @State private var showingArticle = false
+    @State private var selectedFeedForFilter: Feed? = nil
 
     var currentTheme: Theme {
         let style: ThemeStyle
@@ -48,7 +49,8 @@ struct ContentView: View {
                     ArticlesListViewWithSelection(
                         theme: currentTheme,
                         selectedArticle: $selectedArticle,
-                        showingArticle: $showingArticle
+                        showingArticle: $showingArticle,
+                        selectedFeedForFilter: $selectedFeedForFilter
                     )
                     .tabItem {
                         Label("Articles", systemImage: "newspaper.fill")
@@ -56,7 +58,10 @@ struct ContentView: View {
                     .tag(0)
 
                     // Feeds Tab
-                    FeedsView()
+                    FeedsView(
+                        selectedFeedForFilter: $selectedFeedForFilter,
+                        selectedTab: $selectedTab
+                    )
                         .tabItem {
                             Label("Feeds", systemImage: "list.bullet")
                         }
@@ -86,6 +91,7 @@ struct ArticlesListViewWithSelection: View {
     let theme: Theme
     @Binding var selectedArticle: Article?
     @Binding var showingArticle: Bool
+    @Binding var selectedFeedForFilter: Feed?
     @State private var isRefreshing = false
     @State private var lastRefreshTime: Date?
     @State private var filterMode: FilterMode = .unreadOnly
@@ -97,12 +103,22 @@ struct ArticlesListViewWithSelection: View {
     }
 
     var filteredArticles: [Article] {
+        var result = articles
+
+        // Apply read/unread filter
         switch filterMode {
         case .showAll:
-            return articles
+            break
         case .unreadOnly:
-            return articles.filter { !$0.isRead }
+            result = result.filter { !$0.isRead }
         }
+
+        // Apply feed filter
+        if let selectedFeed = selectedFeedForFilter {
+            result = result.filter { $0.feedTitle == selectedFeed.title }
+        }
+
+        return result
     }
 
     var body: some View {
@@ -119,6 +135,37 @@ struct ArticlesListViewWithSelection: View {
                     Text("Add an RSS feed to get started")
                         .font(.subheadline)
                         .foregroundColor(.secondary)
+                    Spacer()
+                }
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .background(Color(.systemBackground))
+            } else if filteredArticles.isEmpty && selectedFeedForFilter != nil {
+                // Empty state when feed filter is active but no articles match
+                VStack(spacing: 20) {
+                    Spacer()
+                    Image(systemName: "tray.fill")
+                        .font(.system(size: 64))
+                        .foregroundColor(.blue)
+                        .opacity(0.3)
+                    Text("No Articles")
+                        .font(.system(size: 24, weight: .bold, design: .default))
+                    Text("No articles found for \(selectedFeedForFilter?.title ?? "this feed")")
+                        .font(.subheadline)
+                        .foregroundColor(.secondary)
+                        .multilineTextAlignment(.center)
+                        .padding(.horizontal, 40)
+
+                    Button(action: { selectedFeedForFilter = nil }) {
+                        Text("Show All Feeds")
+                            .fontWeight(.semibold)
+                            .padding(.vertical, 8)
+                            .padding(.horizontal, 16)
+                            .background(Color.blue)
+                            .foregroundColor(.white)
+                            .cornerRadius(6)
+                    }
+                    .padding(.top, 16)
+
                     Spacer()
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -153,38 +200,53 @@ struct ArticlesListViewWithSelection: View {
                 .background(Color(.systemBackground))
             } else {
                 VStack(spacing: 0) {
-                    // Header
-                    TabHeaderView("All Feeds") {
+                    // Header with dynamic title
+                    TabHeaderView(selectedFeedForFilter?.title ?? "All Feeds") {
                         AnyView(
-                            Menu {
-                                Section {
-                                    Button(action: { filterMode = .showAll }) {
-                                        HStack {
-                                            Image(systemName: filterMode == .showAll ? "checkmark.circle.fill" : "circle")
-                                            Text("Show All")
+                            HStack(spacing: 12) {
+                                // Clear filter button (only show if feed filter is active)
+                                if selectedFeedForFilter != nil {
+                                    Button(action: { selectedFeedForFilter = nil }) {
+                                        HStack(spacing: 4) {
+                                            Image(systemName: "xmark.circle.fill")
+                                            Text("Clear")
                                         }
-                                    }
-
-                                    Button(action: { filterMode = .unreadOnly }) {
-                                        HStack {
-                                            Image(systemName: filterMode == .unreadOnly ? "checkmark.circle.fill" : "circle")
-                                            Text("Unread only")
-                                        }
+                                        .font(.system(size: 14, weight: .medium))
+                                        .foregroundColor(.blue)
                                     }
                                 }
 
-                                Divider()
+                                // Filter menu
+                                Menu {
+                                    Section {
+                                        Button(action: { filterMode = .showAll }) {
+                                            HStack {
+                                                Image(systemName: filterMode == .showAll ? "checkmark.circle.fill" : "circle")
+                                                Text("Show All")
+                                            }
+                                        }
 
-                                Button(role: .destructive, action: { showingMarkAllConfirmation = true }) {
-                                    HStack {
-                                        Image(systemName: "checkmark.square.fill")
-                                        Text("Mark all as read")
+                                        Button(action: { filterMode = .unreadOnly }) {
+                                            HStack {
+                                                Image(systemName: filterMode == .unreadOnly ? "checkmark.circle.fill" : "circle")
+                                                Text("Unread only")
+                                            }
+                                        }
                                     }
+
+                                    Divider()
+
+                                    Button(role: .destructive, action: { showingMarkAllConfirmation = true }) {
+                                        HStack {
+                                            Image(systemName: "checkmark.square.fill")
+                                            Text("Mark all as read")
+                                        }
+                                    }
+                                } label: {
+                                    Image(systemName: "line.3.horizontal.decrease.circle")
+                                        .font(.system(size: 20))
+                                        .foregroundColor(.blue)
                                 }
-                            } label: {
-                                Image(systemName: "line.3.horizontal.decrease.circle")
-                                    .font(.system(size: 20))
-                                    .foregroundColor(.blue)
                             }
                         )
                     }
@@ -209,7 +271,11 @@ struct ArticlesListViewWithSelection: View {
                                 selectedArticle = article
                                 showingArticle = true
                             }) {
-                                ArticleListItemView(article: article)
+                                ArticleListItemView(
+                                    article: article,
+                                    selectedFeedForFilter: $selectedFeedForFilter,
+                                    feeds: feeds
+                                )
                             }
                             .listRowInsets(EdgeInsets())
                             .listRowSeparator(.hidden)
@@ -274,7 +340,8 @@ struct ArticlesListViewWithSelection: View {
     }
 
     private func markAllAsRead() {
-        for article in articles {
+        // Only mark filtered articles as read (respects both feed filter and read/unread filter)
+        for article in filteredArticles {
             article.isRead = true
         }
     }
@@ -282,6 +349,8 @@ struct ArticlesListViewWithSelection: View {
 
 struct ArticleListItemView: View {
     let article: Article
+    @Binding var selectedFeedForFilter: Feed?
+    let feeds: [Feed]
 
     var excerpt: String {
         if !article.summary.isEmpty {
@@ -314,9 +383,18 @@ struct ArticleListItemView: View {
 
             // Meta row: Feed Title • Relative Time
             HStack(spacing: 6) {
-                Text(article.feedTitle)
-                    .font(.caption2)
-                    .foregroundColor(.secondary)
+                Button(action: {
+                    // Find the feed by title and set it as the filter
+                    if let feed = feeds.first(where: { $0.title == article.feedTitle }) {
+                        selectedFeedForFilter = feed
+                    }
+                }) {
+                    Text(article.feedTitle)
+                        .font(.caption2)
+                        .foregroundColor(.blue)
+                        .underline()
+                }
+                .buttonStyle(PlainButtonStyle())
 
                 Text("•")
                     .font(.caption2)
