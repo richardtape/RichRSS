@@ -18,6 +18,7 @@ class RSSFeedParser: NSObject, XMLParserDelegate {
     private var isParsingFeedElement = false  // Track if we're in channel/feed element
     private var isParsingArticle = false  // Track if we're inside an article/item
     private var shouldExtractFeedTitle = true  // Whether to extract feed title from XML (false when user provides it)
+    private var feedTitleElement: String = ""  // Track which element we're extracting feed title from
 
     func parseFeed(from data: Data, feedTitle: String) throws -> [Article] {
         self.articles = []
@@ -26,6 +27,7 @@ class RSSFeedParser: NSObject, XMLParserDelegate {
         self.isParsingArticle = false
         self.isAtomFeed = false
         self.isParsingFeedElement = false
+        self.feedTitleElement = ""
 
         let parser = XMLParser(data: data)
         parser.delegate = self
@@ -50,6 +52,7 @@ class RSSFeedParser: NSObject, XMLParserDelegate {
         self.isParsingFeedElement = false
         self.isAtomFeed = false
         self.isParsingArticle = false
+        self.feedTitleElement = ""
 
         let parser = XMLParser(data: data)
         parser.delegate = self
@@ -107,9 +110,9 @@ class RSSFeedParser: NSObject, XMLParserDelegate {
             if isParsingArticle {
                 // Article-level title
                 currentArticle["title", default: ""] += trimmed
-            } else if isParsingFeedElement && shouldExtractFeedTitle {
-                // Feed-level title (only if we should extract it from XML)
-                feedTitle += trimmed
+            } else if isParsingFeedElement && shouldExtractFeedTitle && feedTitle.isEmpty {
+                // Feed-level title (only capture once, if we should extract it from XML)
+                feedTitle = trimmed
             }
         case "description":
             currentArticle["description", default: ""] += trimmed

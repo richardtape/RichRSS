@@ -289,6 +289,14 @@ struct FeedsView: View {
     private func deleteFeeds(offsets: IndexSet) {
         for index in offsets {
             let feed = feeds[index]
+
+            // Delete all articles associated with this feed
+            let articlesToDelete = articles.filter { $0.feedTitle == feed.title }
+            for article in articlesToDelete {
+                modelContext.delete(article)
+            }
+
+            // Delete the feed itself
             modelContext.delete(feed)
         }
     }
