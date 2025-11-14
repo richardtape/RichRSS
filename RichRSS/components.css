@@ -26,13 +26,13 @@
 
   /* ===== TYPOGRAPHY ===== */
   /* Font Sizes */
-  --font-size-title: 28px;           /* Navigation titles, main headings */
-  --font-size-title2: 22px;          /* Section headers like "All Feeds" */
-  --font-size-headline: 18px;        /* Article titles */
-  --font-size-body: 16px;            /* Article excerpts, main content */
-  --font-size-subheadline: 15px;     /* Secondary body text */
-  --font-size-caption: 14px;         /* Meta info (feed title, date) */
-  --font-size-caption2: 13px;        /* Smaller meta info */
+  --font-size-title: 31px;           /* Navigation titles, main headings */
+  --font-size-title2: 24px;          /* Section headers like "All Feeds" */
+  --font-size-headline: 20px;        /* Article titles */
+  --font-size-body: 18px;            /* Article excerpts, main content */
+  --font-size-subheadline: 17px;     /* Secondary body text */
+  --font-size-caption: 15px;         /* Meta info (feed title, date) */
+  --font-size-caption2: 14px;        /* Smaller meta info */
 
   /* Font Weights */
   --font-weight-regular: 400;

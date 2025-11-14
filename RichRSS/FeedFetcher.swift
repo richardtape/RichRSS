@@ -49,6 +49,28 @@ actor FeedFetcher {
         return results
     }
 
+    /// Fetches a feed and extracts its title from the feed's metadata
+    /// - Parameter urlString: URL to the RSS/Atom feed
+    /// - Returns: Tuple of (feedTitle, articles) extracted from the feed
+    /// - Throws: Network or parsing errors
+    func fetchFeedWithTitle(from urlString: String) async throws -> (title: String, articles: [Article]) {
+        guard let url = URL(string: urlString) else {
+            throw NSError(domain: "FeedFetcher", code: -1, userInfo: [NSLocalizedDescriptionKey: "Invalid URL"])
+        }
+
+        let (data, response) = try await URLSession.shared.data(from: url)
+
+        guard let httpResponse = response as? HTTPURLResponse, (200...299).contains(httpResponse.statusCode) else {
+            throw NSError(domain: "FeedFetcher", code: -1, userInfo: [NSLocalizedDescriptionKey: "HTTP Error"])
+        }
+
+        do {
+            return try parser.parseFeedWithTitle(from: data)
+        } catch {
+            throw error
+        }
+    }
+
     /// Checks if a URL points to a valid RSS/Atom feed by examining the Content-Type header
     /// and attempting to parse it as a feed
     /// - Parameter urlString: The URL to validate

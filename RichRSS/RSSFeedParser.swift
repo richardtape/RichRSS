@@ -15,16 +15,49 @@ class RSSFeedParser: NSObject, XMLParserDelegate {
     private var feedDescription = ""
     private var parseError: Error?
     private var isAtomFeed = false
+    private var isParsingFeedElement = false  // Track if we're in channel/feed element
+    private var isParsingArticle = false  // Track if we're inside an article/item
+    private var shouldExtractFeedTitle = true  // Whether to extract feed title from XML (false when user provides it)
 
     func parseFeed(from data: Data, feedTitle: String) throws -> [Article] {
         self.articles = []
         self.feedTitle = feedTitle
+        self.shouldExtractFeedTitle = false  // User provided title, don't extract from XML
+        self.isParsingArticle = false
+        self.isAtomFeed = false
+        self.isParsingFeedElement = false
 
         let parser = XMLParser(data: data)
         parser.delegate = self
 
         if parser.parse() {
             return articles
+        } else if let error = parseError {
+            throw error
+        } else {
+            throw NSError(domain: "RSSParser", code: -1, userInfo: [NSLocalizedDescriptionKey: "Failed to parse RSS feed"])
+        }
+    }
+
+    /// Parses a feed and returns both the extracted title and articles
+    /// - Parameter data: Raw XML data from the feed URL
+    /// - Returns: Tuple of (feedTitle, articles)
+    /// - Throws: Parsing errors
+    func parseFeedWithTitle(from data: Data) throws -> (title: String, articles: [Article]) {
+        self.articles = []
+        self.feedTitle = ""  // Reset to extract from feed
+        self.shouldExtractFeedTitle = true  // Extract feed title from XML
+        self.isParsingFeedElement = false
+        self.isAtomFeed = false
+        self.isParsingArticle = false
+
+        let parser = XMLParser(data: data)
+        parser.delegate = self
+
+        if parser.parse() {
+            // Use extracted title, fall back to generic name if empty
+            let finalTitle = feedTitle.isEmpty ? "Untitled Feed" : feedTitle
+            return (title: finalTitle, articles: articles)
         } else if let error = parseError {
             throw error
         } else {
@@ -40,11 +73,17 @@ class RSSFeedParser: NSObject, XMLParserDelegate {
         // Detect feed type
         if elementName == "feed" {
             isAtomFeed = true
+            isParsingFeedElement = true
+        }
+
+        if elementName == "channel" {
+            isParsingFeedElement = true
         }
 
         // Handle both RSS <item> and Atom <entry>
         if elementName == "item" || elementName == "entry" {
             currentArticle = [:]
+            isParsingArticle = true
         }
 
         // Handle Atom <link> elements
@@ -64,7 +103,14 @@ class RSSFeedParser: NSObject, XMLParserDelegate {
 
         switch currentElement {
         case "title":
-            currentArticle["title", default: ""] += trimmed
+            // Check if we're parsing an article title or feed title
+            if isParsingArticle {
+                // Article-level title
+                currentArticle["title", default: ""] += trimmed
+            } else if isParsingFeedElement && shouldExtractFeedTitle {
+                // Feed-level title (only if we should extract it from XML)
+                feedTitle += trimmed
+            }
         case "description":
             currentArticle["description", default: ""] += trimmed
         case "content", "content:encoded":
@@ -93,10 +139,6 @@ class RSSFeedParser: NSObject, XMLParserDelegate {
             if isAtomFeed {
                 currentArticle["guid", default: ""] += trimmed
             }
-        case "channel":
-            if currentElement == "title" {
-                feedTitle += trimmed
-            }
         default:
             break
         }
@@ -109,7 +151,14 @@ class RSSFeedParser: NSObject, XMLParserDelegate {
             let article = createArticle(from: currentArticle)
             articles.append(article)
             currentArticle = [:]
+            isParsingArticle = false
         }
+
+        // End of feed element
+        if elementName == "channel" || elementName == "feed" {
+            isParsingFeedElement = false
+        }
+
         currentElement = ""
     }
 

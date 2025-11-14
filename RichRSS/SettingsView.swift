@@ -56,17 +56,30 @@ struct SettingsView: View {
     }
 
     private func resetAllData() {
-        // Delete all articles
-        try? modelContext.delete(model: Article.self)
+        do {
+            // Delete all articles first
+            try modelContext.delete(model: Article.self)
+            print("✅ Successfully deleted all articles")
 
-        // Delete all feeds
-        try? modelContext.delete(model: Feed.self)
+            // Delete all feeds
+            try modelContext.delete(model: Feed.self)
+            print("✅ Successfully deleted all feeds")
 
-        // Reset theme to light
-        selectedThemeStyle = "light"
+            // Save the model context to persist deletions
+            try modelContext.save()
+            print("✅ Model context saved after deletion")
 
-        // Clear HTML cache
-        ArticleHTMLCache.shared.clearCache()
+            // Reset theme to light
+            selectedThemeStyle = "light"
+
+            // Clear HTML cache
+            ArticleHTMLCache.shared.clearCache()
+            print("✅ HTML cache cleared")
+
+            print("✅ All data removal complete")
+        } catch {
+            print("❌ Error during data deletion: \(error.localizedDescription)")
+        }
     }
 }
 

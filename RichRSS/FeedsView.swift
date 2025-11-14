@@ -18,9 +18,12 @@ struct FeedsView: View {
     @State private var showAddFeed = false
     @State private var feedURL = ""
     @State private var feedTitle = ""
+    @State private var articleCount = 0
+    @State private var discoveredArticles: [Article] = []
     @State private var isLoading = false
     @State private var errorMessage: String?
     @State private var discoveryStatus: String?
+    @State private var addFeedViewReference: AddFeedView?
 
     var currentTheme: Theme {
         let style: ThemeStyle
@@ -136,6 +139,10 @@ struct FeedsView: View {
                     isLoading: $isLoading,
                     errorMessage: $errorMessage,
                     discoveryStatus: $discoveryStatus,
+                    initialFeedURL: $feedURL,
+                    initialFeedTitle: $feedTitle,
+                    initialArticleCount: $articleCount,
+                    discoveredArticles: $discoveredArticles,
                     onAdd: addFeed
                 )
             }
@@ -149,62 +156,120 @@ struct FeedsView: View {
 
         Task {
             do {
-                // Try to discover the feed if the provided URL is not already an RSS feed
-                var finalFeedUrl = url
+                // If title is empty, we're in discovery mode (user clicked "Search")
+                // Otherwise, we're in confirmation mode (user confirmed feed details)
+                let isConfirmationMode = !title.isEmpty
 
-                // Check if this is already an RSS feed
-                discoveryStatus = "Checking for RSS feed..."
-                let isRSSFeed = await FeedFetcher.shared.isRSSFeed(url)
-
-                if !isRSSFeed {
-                    // Not a feed, try to discover one
-                    discoveryStatus = "Searching for feed..."
-                    let discovered = try await FeedDiscoverer.shared.discoverFeed(from: url) { status in
-                        DispatchQueue.main.async {
-                            self.discoveryStatus = status
-                        }
-                    }
-                    finalFeedUrl = discovered.feedUrl
+                if isConfirmationMode {
+                    // User confirmed the feed with title - proceed directly to adding
+                    await addConfirmedFeed(url: url, title: title)
+                } else {
+                    // Discovery mode - find the feed and get its title
+                    await discoverAndShowConfirmation(url: url)
                 }
+            }
+        }
+    }
 
-                // Fetch the feed
-                discoveryStatus = "Fetching feed..."
-                let articles = try await FeedFetcher.shared.fetchFeed(from: finalFeedUrl, feedTitle: title)
+    /// Discovers a feed URL and fetches its details for confirmation
+    /// This will show the feed details but won't add it to the database yet
+    private func discoverAndShowConfirmation(url: String) async {
+        do {
+            var finalFeedUrl = url
 
-                // Fetch favicon (don't block on this)
-                let siteUrl = try? extractSiteUrl(from: finalFeedUrl)
-                let faviconUrl = await FaviconFetcher.shared.fetchFaviconUrl(
-                    feedImageUrl: articles.first?.imageUrl,
-                    siteUrl: siteUrl
+            // Check if this is already an RSS feed
+            discoveryStatus = "Checking for RSS feed..."
+            let isRSSFeed = await FeedFetcher.shared.isRSSFeed(url)
+
+            if !isRSSFeed {
+                // Not a feed, try to discover one
+                discoveryStatus = "Searching for feed..."
+                let discovered = try await FeedDiscoverer.shared.discoverFeed(from: url) { status in
+                    DispatchQueue.main.async {
+                        self.discoveryStatus = status
+                    }
+                }
+                finalFeedUrl = discovered.feedUrl
+            }
+
+            // Fetch the feed to get its title and article count
+            discoveryStatus = "Fetching feed information..."
+            let (foundTitle, articles) = try await FeedFetcher.shared.fetchFeedWithTitle(from: finalFeedUrl)
+
+            // Save discovered info and transition to confirmation screen
+            await MainActor.run {
+                self.feedURL = finalFeedUrl
+                self.feedTitle = foundTitle
+                self.articleCount = articles.count
+                self.discoveredArticles = articles
+                self.isLoading = false
+                self.discoveryStatus = nil
+                // The AddFeedView will detect these updates via bindings and show confirmation screen
+            }
+        } catch {
+            await MainActor.run {
+                errorMessage = error.localizedDescription
+                isLoading = false
+                discoveryStatus = nil
+            }
+        }
+    }
+
+    /// Adds a confirmed feed with URL and title
+    private func addConfirmedFeed(url: String, title: String) async {
+        do {
+            // Discover feed URL if needed
+            var finalFeedUrl = url
+            discoveryStatus = "Checking for RSS feed..."
+            let isRSSFeed = await FeedFetcher.shared.isRSSFeed(url)
+
+            if !isRSSFeed {
+                discoveryStatus = "Searching for feed..."
+                let discovered = try await FeedDiscoverer.shared.discoverFeed(from: url) { status in
+                    DispatchQueue.main.async {
+                        self.discoveryStatus = status
+                    }
+                }
+                finalFeedUrl = discovered.feedUrl
+            }
+
+            // Fetch the feed with user-confirmed title
+            discoveryStatus = "Fetching feed..."
+            let articles = try await FeedFetcher.shared.fetchFeed(from: finalFeedUrl, feedTitle: title)
+
+            // Fetch favicon (don't block on this)
+            let siteUrl = try? extractSiteUrl(from: finalFeedUrl)
+            let faviconUrl = await FaviconFetcher.shared.fetchFaviconUrl(
+                feedImageUrl: articles.first?.imageUrl,
+                siteUrl: siteUrl
+            )
+
+            await MainActor.run {
+                // Create and insert the feed
+                let feed = Feed(
+                    id: UUID().uuidString,
+                    title: title,
+                    feedUrl: finalFeedUrl,
+                    siteUrl: siteUrl,
+                    lastUpdated: Date(),
+                    faviconUrl: faviconUrl
                 )
+                modelContext.insert(feed)
 
-                await MainActor.run {
-                    // Create and insert the feed
-                    let feed = Feed(
-                        id: UUID().uuidString,
-                        title: title,
-                        feedUrl: finalFeedUrl,
-                        siteUrl: siteUrl,
-                        lastUpdated: Date(),
-                        faviconUrl: faviconUrl
-                    )
-                    modelContext.insert(feed)
-
-                    // Insert articles
-                    for article in articles {
-                        modelContext.insert(article)
-                    }
-
-                    isLoading = false
-                    showAddFeed = false
-                    discoveryStatus = nil
+                // Insert articles
+                for article in articles {
+                    modelContext.insert(article)
                 }
-            } catch {
-                await MainActor.run {
-                    errorMessage = error.localizedDescription
-                    isLoading = false
-                    discoveryStatus = nil
-                }
+
+                isLoading = false
+                showAddFeed = false
+                discoveryStatus = nil
+            }
+        } catch {
+            await MainActor.run {
+                errorMessage = error.localizedDescription
+                isLoading = false
+                discoveryStatus = nil
             }
         }
     }

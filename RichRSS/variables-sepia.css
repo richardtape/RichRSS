@@ -18,13 +18,13 @@
   --pill-text-color: #b87d2b;
 
   /* Typography Overrides (Sepia theme uses standard sizes) */
-  --font-size-title: 28px;
-  --font-size-title2: 22px;
-  --font-size-headline: 18px;
-  --font-size-body: 16px;
-  --font-size-subheadline: 15px;
-  --font-size-caption: 14px;
-  --font-size-caption2: 13px;
+  --font-size-title: 31px;
+  --font-size-title2: 24px;
+  --font-size-headline: 20px;
+  --font-size-body: 18px;
+  --font-size-subheadline: 17px;
+  --font-size-caption: 15px;
+  --font-size-caption2: 14px;
 
   --font-weight-regular: 400;
   --font-weight-semibold: 600;

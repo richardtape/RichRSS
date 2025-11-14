@@ -1013,62 +1013,86 @@ struct AddFeedView: View {
     @Binding var isLoading: Bool
     @Binding var errorMessage: String?
     @Binding var discoveryStatus: String?
+    @Binding var initialFeedURL: String  // Receives discovered feed URL from parent
+    @Binding var initialFeedTitle: String  // Receives discovered feed title from parent
+    @Binding var initialArticleCount: Int  // Receives discovered article count from parent
+    @Binding var discoveredArticles: [Article]  // Receives discovered articles from parent
     let onAdd: (String, String) -> Void
+
     @State private var url = ""
     @State private var title = ""
+    @State private var isShowingConfirmation = false
+    @State private var currentFeedUrl: String = ""
 
     var body: some View {
         NavigationView {
             VStack(spacing: 0) {
-                Form {
-                    TextField("Feed URL", text: $url)
-                        .keyboardType(.URL)
-                        .textContentType(.URL)
-                        .disabled(isLoading)
-                    TextField("Feed Title", text: $title)
-                        .textContentType(.none)
-                        .disabled(isLoading)
-                }
+                if isShowingConfirmation {
+                    // Confirmation screen with pre-filled title
+                    ConfirmFeedView(
+                        url: currentFeedUrl,
+                        title: $title,
+                        articleCount: initialArticleCount,
+                        articles: discoveredArticles,
+                        isLoading: isLoading,
+                        onConfirm: {
+                            onAdd(currentFeedUrl, title)
+                        },
+                        onEditURL: {
+                            isShowingConfirmation = false
+                        }
+                    )
+                } else {
+                    // URL input screen
+                    Form {
+                        TextField("Feed URL", text: $url)
+                            .keyboardType(.URL)
+                            .textContentType(.URL)
+                            .disabled(isLoading)
+                    }
 
-                if let errorMessage = errorMessage {
-                    VStack(alignment: .leading, spacing: 8) {
-                        HStack {
-                            Image(systemName: "exclamationmark.circle.fill")
-                                .foregroundColor(.red)
-                            Text(errorMessage)
-                                .font(.caption)
-                                .foregroundColor(.red)
-                                .lineLimit(4)
+                    if let errorMessage = errorMessage {
+                        VStack(alignment: .leading, spacing: 8) {
+                            HStack {
+                                Image(systemName: "exclamationmark.circle.fill")
+                                    .foregroundColor(.red)
+                                Text(errorMessage)
+                                    .font(.caption)
+                                    .foregroundColor(.red)
+                                    .lineLimit(4)
+                            }
+                            .padding()
+                            .background(Color.red.opacity(0.1))
+                            .cornerRadius(8)
                         }
                         .padding()
-                        .background(Color.red.opacity(0.1))
-                        .cornerRadius(8)
                     }
-                    .padding()
-                }
 
-                if isLoading {
-                    VStack(spacing: 12) {
-                        ProgressView()
-                        if let discoveryStatus = discoveryStatus {
-                            Text(discoveryStatus)
-                                .font(.caption)
-                                .foregroundColor(.gray)
-                                .multilineTextAlignment(.center)
-                        } else {
-                            Text("Adding feed...")
-                                .font(.caption)
-                                .foregroundColor(.gray)
+                    if isLoading {
+                        VStack(spacing: 12) {
+                            ProgressView()
+                            if let discoveryStatus = discoveryStatus {
+                                Text(discoveryStatus)
+                                    .font(.caption)
+                                    .foregroundColor(.gray)
+                                    .multilineTextAlignment(.center)
+                            } else {
+                                Text("Searching for feed...")
+                                    .font(.caption)
+                                    .foregroundColor(.gray)
+                            }
                         }
+                        .frame(maxWidth: .infinity)
+                        .padding()
+                        .background(Color.blue.opacity(0.05))
+                        .cornerRadius(8)
+                        .padding()
                     }
-                    .frame(maxWidth: .infinity)
-                    .padding()
-                    .background(Color.blue.opacity(0.05))
-                    .cornerRadius(8)
-                    .padding()
+
+                    Spacer()
                 }
             }
-            .navigationTitle("Add Feed")
+            .navigationTitle(isShowingConfirmation ? "Confirm Feed" : "Add Feed")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
@@ -1078,23 +1102,229 @@ struct AddFeedView: View {
                         discoveryStatus = nil
                         url = ""
                         title = ""
+                        isShowingConfirmation = false
                     }
                     .disabled(isLoading)
                 }
                 ToolbarItem(placement: .navigationBarTrailing) {
-                    if isLoading {
-                        ProgressView()
-                            .scaleEffect(0.8)
-                    } else {
-                        Button("Add") {
-                            discoveryStatus = nil
-                            onAdd(url, title)
+                    if isShowingConfirmation {
+                        // Confirmation screen buttons
+                        if isLoading {
+                            ProgressView()
+                                .scaleEffect(0.8)
+                        } else {
+                            Button("Add Feed") {
+                                onAdd(currentFeedUrl, title)
+                            }
                         }
-                        .disabled(url.isEmpty || title.isEmpty)
+                    } else {
+                        // Initial screen buttons
+                        if isLoading {
+                            ProgressView()
+                                .scaleEffect(0.8)
+                        } else {
+                            Button("Search") {
+                                currentFeedUrl = url
+                                discoveryStatus = nil
+                                // Pass empty title to signal discovery mode
+                                onAdd(url, "")
+                            }
+                            .disabled(url.isEmpty)
+                        }
                     }
                 }
             }
         }
+        .onChange(of: initialFeedTitle) { oldValue, newValue in
+            // When parent sets a discovered title, transition to confirmation screen
+            if !newValue.isEmpty && !initialFeedURL.isEmpty {
+                title = newValue
+                currentFeedUrl = initialFeedURL
+                isShowingConfirmation = true
+                // Note: discoveredArticleCount will be fetched by parent when needed
+                // For now, we display a placeholder or fetch it ourselves if needed
+            }
+        }
+        .onDisappear {
+            // Reset parent state variables when sheet closes
+            DispatchQueue.main.async {
+                initialFeedURL = ""
+                initialFeedTitle = ""
+                initialArticleCount = 0
+                discoveredArticles = []
+            }
+        }
+    }
+}
+
+// MARK: - Confirmation View
+
+struct ConfirmFeedView: View {
+    let url: String
+    @Binding var title: String
+    let articleCount: Int
+    let articles: [Article]
+    let isLoading: Bool
+    let onConfirm: () -> Void
+    let onEditURL: () -> Void
+
+    var body: some View {
+        VStack(spacing: 20) {
+            // Feed title input
+            VStack(alignment: .leading, spacing: 8) {
+                Text("Feed Title")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+                TextField("Feed Title", text: $title)
+                    .textFieldStyle(.roundedBorder)
+                    .disabled(isLoading)
+                    .onChange(of: title) { oldValue, newValue in
+                        // Limit to 25 characters
+                        if newValue.count > 25 {
+                            title = String(newValue.prefix(25))
+                        }
+                    }
+            }
+            .padding()
+
+            // Feed info
+            VStack(alignment: .leading, spacing: 12) {
+                HStack {
+                    Label {
+                        Text("URL")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                    } icon: {
+                        Image(systemName: "link")
+                    }
+                    Spacer()
+                }
+
+                Text(url)
+                    .font(.caption2)
+                    .foregroundColor(.blue)
+                    .lineLimit(2)
+                    .truncationMode(.tail)
+
+                Divider()
+
+                HStack {
+                    Label {
+                        Text("\(articleCount) articles found")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                    } icon: {
+                        Image(systemName: "newspaper.fill")
+                    }
+                    Spacer()
+                }
+            }
+            .padding()
+            .background(Color(.systemGray6))
+            .cornerRadius(8)
+            .padding()
+
+            // Edit URL button
+            Button(action: onEditURL) {
+                HStack {
+                    Image(systemName: "pencil")
+                    Text("Edit URL")
+                }
+                .frame(maxWidth: .infinity)
+                .padding(12)
+                .background(Color(.systemGray5))
+                .foregroundColor(.primary)
+                .cornerRadius(8)
+            }
+            .padding(.horizontal)
+            .disabled(isLoading)
+
+            // Article preview (most recent) - using same styling as ArticleListItemView
+            if !articles.isEmpty, let latestArticle = articles.first {
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("Latest Article")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                        .padding(.horizontal)
+
+                    VStack(alignment: .leading, spacing: 8) {
+                        // Title
+                        Text(latestArticle.title)
+                            .font(.system(.headline, design: .default))
+                            .fontWeight(.semibold)
+                            .lineLimit(3)
+                            .tracking(-0.3)
+                            .foregroundColor(.primary)
+
+                        // Excerpt/Summary
+                        let excerpt = HTMLStripper.stripHTML(latestArticle.summary)
+                        if !excerpt.isEmpty {
+                            Text(excerpt)
+                                .font(.subheadline)
+                                .foregroundColor(.secondary)
+                                .lineLimit(3)
+                                .lineSpacing(0.5)
+                        }
+
+                        // Meta row: Feed Title • Relative Time
+                        HStack(spacing: 6) {
+                            Text(latestArticle.feedTitle)
+                                .font(.caption2)
+                                .foregroundColor(.blue)
+
+                            Text("•")
+                                .font(.caption2)
+                                .foregroundColor(.secondary)
+
+                            Text(relativeTimeString(latestArticle.pubDate))
+                                .font(.caption2)
+                                .foregroundColor(.secondary)
+
+                            Spacer()
+                        }
+
+                        // Divider
+                        Divider()
+                            .padding(.top, 4)
+                    }
+                    .padding(.vertical, 12)
+                    .padding(.horizontal, 12)
+                    .background(Color(.systemGray6))
+                    .cornerRadius(8)
+                }
+                .padding()
+            }
+
+            Spacer()
+        }
+        .padding(.vertical)
+    }
+
+    /// Returns relative time in format: "< 1hr ago", "2h ago", "3d ago", etc.
+    private func relativeTimeString(_ date: Date) -> String {
+        let now = Date()
+        let intervalSeconds = now.timeIntervalSince(date)
+
+        // Less than 1 hour
+        if intervalSeconds < 3600 {
+            return "< 1hr ago"
+        }
+
+        // Less than 24 hours (show in hours)
+        if intervalSeconds < 86400 {
+            let hours = Int(intervalSeconds / 3600)
+            return "\(hours)h ago"
+        }
+
+        // Less than 7 days (show in days)
+        if intervalSeconds < 604800 {
+            let days = Int(intervalSeconds / 86400)
+            return "\(days)d ago"
+        }
+
+        // Otherwise show in weeks
+        let weeks = Int(intervalSeconds / 604800)
+        return "\(weeks)w ago"
     }
 }
 
