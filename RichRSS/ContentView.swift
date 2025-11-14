@@ -104,17 +104,20 @@ struct ArticlesListViewWithSelection: View {
     enum FilterMode {
         case showAll
         case unreadOnly
+        case savedOnly
     }
 
     var filteredArticles: [Article] {
         var result = articles
 
-        // Apply read/unread filter
+        // Apply read/unread/saved filter
         switch filterMode {
         case .showAll:
             break
         case .unreadOnly:
             result = result.filter { !$0.isRead }
+        case .savedOnly:
+            result = result.filter { $0.isSaved }
         }
 
         // Apply feed filter
@@ -202,6 +205,37 @@ struct ArticlesListViewWithSelection: View {
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
                 .background(Color(.systemBackground))
+            } else if filteredArticles.isEmpty && filterMode == .savedOnly {
+                // Empty state when saved filter is active but no saved articles
+                VStack(spacing: 20) {
+                    Spacer()
+                    Image(systemName: "bookmark")
+                        .font(.system(size: 64))
+                        .foregroundColor(.blue)
+                        .opacity(0.3)
+                    Text("No Saved Articles")
+                        .font(.system(size: 24, weight: .bold, design: .default))
+                    Text("Swipe right on any article or tap the bookmark icon to save it for later")
+                        .font(.subheadline)
+                        .foregroundColor(.secondary)
+                        .multilineTextAlignment(.center)
+                        .padding(.horizontal, 40)
+
+                    Button(action: { filterMode = .showAll }) {
+                        Text("Show All Articles")
+                            .fontWeight(.semibold)
+                            .padding(.vertical, 8)
+                            .padding(.horizontal, 16)
+                            .background(Color.blue)
+                            .foregroundColor(.white)
+                            .cornerRadius(6)
+                    }
+                    .padding(.top, 16)
+
+                    Spacer()
+                }
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .background(Color(.systemBackground))
             } else {
                 VStack(spacing: 0) {
                     // Header with dynamic title
@@ -234,6 +268,13 @@ struct ArticlesListViewWithSelection: View {
                                             HStack {
                                                 Image(systemName: filterMode == .unreadOnly ? "checkmark.circle.fill" : "circle")
                                                 Text("Unread only")
+                                            }
+                                        }
+
+                                        Button(action: { filterMode = .savedOnly }) {
+                                            HStack {
+                                                Image(systemName: filterMode == .savedOnly ? "checkmark.circle.fill" : "circle")
+                                                Text("Saved only")
                                             }
                                         }
                                     }
@@ -283,8 +324,20 @@ struct ArticlesListViewWithSelection: View {
                             }
                             .listRowInsets(EdgeInsets())
                             .listRowSeparator(.hidden)
+                            .swipeActions(edge: .trailing, allowsFullSwipe: true) {
+                                Button {
+                                    withAnimation {
+                                        article.isSaved.toggle()
+                                    }
+                                } label: {
+                                    Label(
+                                        article.isSaved ? "Unsave" : "Save",
+                                        systemImage: article.isSaved ? "bookmark.slash.fill" : "bookmark.fill"
+                                    )
+                                }
+                                .tint(article.isSaved ? .gray : .blue)
+                            }
                         }
-                        .onDelete(perform: deleteArticles)
                     }
                     .listStyle(.plain)
                     .scrollContentBackground(.hidden)
@@ -332,14 +385,6 @@ struct ArticlesListViewWithSelection: View {
             }
         } catch {
             print("❌ Feed refresh failed: \(error.localizedDescription)")
-        }
-    }
-
-    private func deleteArticles(offsets: IndexSet) {
-        withAnimation {
-            for index in offsets {
-                modelContext.delete(articles[index])
-            }
         }
     }
 
@@ -510,6 +555,17 @@ struct ArticleHeaderView: View {
                         .font(.caption2)
                         .foregroundColor(.gray)
                 }
+            }
+
+            // Bookmark button
+            Button(action: {
+                withAnimation {
+                    article.isSaved.toggle()
+                }
+            }) {
+                Image(systemName: article.isSaved ? "bookmark.fill" : "bookmark")
+                    .font(.system(size: 20, weight: .medium))
+                    .foregroundColor(article.isSaved ? .blue : .gray)
             }
         }
         .padding(12)
