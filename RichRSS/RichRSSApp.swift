@@ -24,9 +24,17 @@ struct RichRSSApp: App {
         }
     }()
 
+    @State private var startupManager: AppStartupManager?
+
     var body: some Scene {
         WindowGroup {
             ContentView()
+                .environment(startupManager ?? AppStartupManager(modelContainer: sharedModelContainer))
+                .onAppear {
+                    if startupManager == nil {
+                        startupManager = AppStartupManager(modelContainer: sharedModelContainer)
+                    }
+                }
         }
         .modelContainer(sharedModelContainer)
     }

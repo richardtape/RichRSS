@@ -9,6 +9,7 @@ import SwiftUI
 import SwiftData
 
 struct ContentView: View {
+    @Environment(AppStartupManager.self) private var startupManager
     @State private var selectedTab = 0
     @AppStorage("selectedThemeStyle") private var selectedThemeStyle: String = "light"
     @State private var selectedArticle: Article?
@@ -34,7 +35,10 @@ struct ContentView: View {
             currentTheme.backgroundColor
                 .ignoresSafeArea()
 
-            if showingArticle, let article = selectedArticle {
+            if startupManager.isLoading {
+                // Show loading screen during startup
+                LoadingView(theme: currentTheme, statusMessage: startupManager.statusMessage)
+            } else if showingArticle, let article = selectedArticle {
                 // Full-screen article view without tab bar
                 ArticleDetailView(
                     article: article,

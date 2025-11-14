@@ -295,6 +295,11 @@ struct FaviconView: View {
 }
 
 #Preview {
-    FeedsView()
-        .modelContainer(for: Feed.self, inMemory: true)
+    @Previewable @State var selectedFeedForFilter: Feed? = nil
+    @Previewable @State var selectedTab = 1
+    return FeedsView(
+        selectedFeedForFilter: $selectedFeedForFilter,
+        selectedTab: $selectedTab
+    )
+    .modelContainer(for: Feed.self, inMemory: true)
 }
