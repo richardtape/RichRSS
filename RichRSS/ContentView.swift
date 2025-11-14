@@ -874,6 +874,7 @@ struct AddFeedView: View {
     @Binding var isPresented: Bool
     @Binding var isLoading: Bool
     @Binding var errorMessage: String?
+    @Binding var discoveryStatus: String?
     let onAdd: (String, String) -> Void
     @State private var url = ""
     @State private var title = ""
@@ -885,8 +886,10 @@ struct AddFeedView: View {
                     TextField("Feed URL", text: $url)
                         .keyboardType(.URL)
                         .textContentType(.URL)
+                        .disabled(isLoading)
                     TextField("Feed Title", text: $title)
                         .textContentType(.none)
+                        .disabled(isLoading)
                 }
 
                 if let errorMessage = errorMessage {
@@ -897,7 +900,7 @@ struct AddFeedView: View {
                             Text(errorMessage)
                                 .font(.caption)
                                 .foregroundColor(.red)
-                                .lineLimit(3)
+                                .lineLimit(4)
                         }
                         .padding()
                         .background(Color.red.opacity(0.1))
@@ -909,9 +912,16 @@ struct AddFeedView: View {
                 if isLoading {
                     VStack(spacing: 12) {
                         ProgressView()
-                        Text("Fetching feed...")
-                            .font(.caption)
-                            .foregroundColor(.gray)
+                        if let discoveryStatus = discoveryStatus {
+                            Text(discoveryStatus)
+                                .font(.caption)
+                                .foregroundColor(.gray)
+                                .multilineTextAlignment(.center)
+                        } else {
+                            Text("Adding feed...")
+                                .font(.caption)
+                                .foregroundColor(.gray)
+                        }
                     }
                     .frame(maxWidth: .infinity)
                     .padding()
@@ -927,6 +937,9 @@ struct AddFeedView: View {
                     Button("Cancel") {
                         isPresented = false
                         errorMessage = nil
+                        discoveryStatus = nil
+                        url = ""
+                        title = ""
                     }
                     .disabled(isLoading)
                 }
@@ -936,6 +949,7 @@ struct AddFeedView: View {
                             .scaleEffect(0.8)
                     } else {
                         Button("Add") {
+                            discoveryStatus = nil
                             onAdd(url, title)
                         }
                         .disabled(url.isEmpty || title.isEmpty)

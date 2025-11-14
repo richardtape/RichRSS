@@ -18,6 +18,7 @@ struct FeedsView: View {
     @State private var feedTitle = ""
     @State private var isLoading = false
     @State private var errorMessage: String?
+    @State private var discoveryStatus: String?
 
     var currentTheme: Theme {
         let style: ThemeStyle
@@ -124,6 +125,7 @@ struct FeedsView: View {
                     isPresented: $showAddFeed,
                     isLoading: $isLoading,
                     errorMessage: $errorMessage,
+                    discoveryStatus: $discoveryStatus,
                     onAdd: addFeed
                 )
             }
@@ -133,13 +135,34 @@ struct FeedsView: View {
     private func addFeed(url: String, title: String) {
         isLoading = true
         errorMessage = nil
+        discoveryStatus = nil
 
         Task {
             do {
-                let articles = try await FeedFetcher.shared.fetchFeed(from: url, feedTitle: title)
+                // Try to discover the feed if the provided URL is not already an RSS feed
+                var finalFeedUrl = url
+
+                // Check if this is already an RSS feed
+                discoveryStatus = "Checking for RSS feed..."
+                let isRSSFeed = await FeedFetcher.shared.isRSSFeed(url)
+
+                if !isRSSFeed {
+                    // Not a feed, try to discover one
+                    discoveryStatus = "Searching for feed..."
+                    let discovered = try await FeedDiscoverer.shared.discoverFeed(from: url) { status in
+                        DispatchQueue.main.async {
+                            self.discoveryStatus = status
+                        }
+                    }
+                    finalFeedUrl = discovered.feedUrl
+                }
+
+                // Fetch the feed
+                discoveryStatus = "Fetching feed..."
+                let articles = try await FeedFetcher.shared.fetchFeed(from: finalFeedUrl, feedTitle: title)
 
                 // Fetch favicon (don't block on this)
-                let siteUrl = try? extractSiteUrl(from: url)
+                let siteUrl = try? extractSiteUrl(from: finalFeedUrl)
                 let faviconUrl = await FaviconFetcher.shared.fetchFaviconUrl(
                     feedImageUrl: articles.first?.imageUrl,
                     siteUrl: siteUrl
@@ -150,7 +173,7 @@ struct FeedsView: View {
                     let feed = Feed(
                         id: UUID().uuidString,
                         title: title,
-                        feedUrl: url,
+                        feedUrl: finalFeedUrl,
                         siteUrl: siteUrl,
                         lastUpdated: Date(),
                         faviconUrl: faviconUrl
@@ -164,11 +187,13 @@ struct FeedsView: View {
 
                     isLoading = false
                     showAddFeed = false
+                    discoveryStatus = nil
                 }
             } catch {
                 await MainActor.run {
                     errorMessage = error.localizedDescription
                     isLoading = false
+                    discoveryStatus = nil
                 }
             }
         }
