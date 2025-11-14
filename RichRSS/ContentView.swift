@@ -289,7 +289,7 @@ struct ArticlesListViewWithSelection: View {
                                     }
                                 } label: {
                                     Image(systemName: "line.3.horizontal.decrease.circle")
-                                        .font(.system(size: 20))
+                                        .font(.system(size: 24))
                                         .foregroundColor(.blue)
                                 }
                             }

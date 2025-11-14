@@ -50,7 +50,7 @@ struct FeedsView: View {
                     AnyView(
                         Button(action: { showAddFeed = true }) {
                             Image(systemName: "plus.circle.fill")
-                                .font(.system(size: 20, weight: .semibold))
+                                .font(.system(size: 24, weight: .semibold))
                                 .foregroundColor(.blue)
                         }
                     )
