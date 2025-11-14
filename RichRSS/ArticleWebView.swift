@@ -19,6 +19,18 @@ struct ArticleWebView: UIViewRepresentable {
         let config = WKWebViewConfiguration()
         config.defaultWebpagePreferences.preferredContentMode = .mobile
 
+        // Allow media playback (for YouTube and other video embeds)
+        config.allowsInlineMediaPlayback = true
+        config.mediaTypesRequiringUserActionForPlayback = []  // Allow autoplay
+
+        // Allow fullscreen for video embeds
+        config.defaultWebpagePreferences.allowsContentJavaScript = true
+
+        // Allow all media types to play without user interaction
+        if #available(iOS 15.0, *) {
+            config.mediaTypesRequiringUserActionForPlayback = []
+        }
+
         let webView = WKWebView(frame: .zero, configuration: config)
         webView.scrollView.showsVerticalScrollIndicator = true
         webView.scrollView.indicatorStyle = .default
@@ -48,7 +60,9 @@ struct ArticleWebView: UIViewRepresentable {
                 ArticleHTMLCache.shared.cacheHTML(htmlContent, for: article)
             }
 
-            container.webView.loadHTMLString(htmlContent, baseURL: nil)
+            // Load with a base URL to help YouTube embeds work properly
+            let baseURL = URL(string: "https://example.com")
+            container.webView.loadHTMLString(htmlContent, baseURL: baseURL)
             container.currentArticleId = article.uniqueId
             container.currentThemeStyle = themeStyle
         }
@@ -62,7 +76,7 @@ struct ArticleWebView: UIViewRepresentable {
         // Get raw HTML content from the article
         let content = article.content ?? article.summary
 
-        // Remove dangerous script and style tags
+        // Remove dangerous script and style tags, but keep iframes
         var cleanContent = content
         cleanContent = cleanContent.replacingOccurrences(
             of: "<script[^>]*>.*?</script>",
@@ -74,6 +88,35 @@ struct ArticleWebView: UIViewRepresentable {
             with: "",
             options: [.regularExpression, .caseInsensitive]
         )
+
+        // Add required attributes to iframes for YouTube and other embeds
+        // YouTube needs the 'allow' attribute to function properly
+        let allowAttribute = "allow=\"accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture\""
+
+        cleanContent = cleanContent.replacingOccurrences(
+            of: "<iframe",
+            with: "<iframe \(allowAttribute) allowfullscreen"
+        )
+
+        // Clean up any duplicate attributes
+        cleanContent = cleanContent.replacingOccurrences(
+            of: "allowfullscreen allowfullscreen",
+            with: "allowfullscreen"
+        )
+
+        // Debug: Check if we have any iframes
+        if cleanContent.contains("<iframe") {
+            print("✅ Found iframe in content")
+
+            // Extract and log the iframe src
+            if let iframeRange = cleanContent.range(of: "<iframe[^>]*src=\"[^\"]*\"", options: .regularExpression) {
+                let iframeTag = String(cleanContent[iframeRange])
+                print("📹 Iframe tag: \(iframeTag)")
+            }
+        } else {
+            print("⚠️ No iframe found in article content")
+            print("Content preview: \(cleanContent.prefix(500))")
+        }
 
         // Build link HTML if we have an article link
         var linkHTML = ""
@@ -99,6 +142,7 @@ struct ArticleWebView: UIViewRepresentable {
         <head>
             <meta charset="UTF-8">
             <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <meta name="referrer" content="no-referrer-when-downgrade">
             <style>
             \(componentsCSS)
             \(themeVariablesCSS)

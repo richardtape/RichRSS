@@ -326,3 +326,38 @@ a {
   -webkit-user-select: none;
   user-select: none;
 }
+
+/* ===== EMBEDDED MEDIA ===== */
+/* Responsive iframes for YouTube, Vimeo, and other embeds */
+iframe {
+  max-width: 100%;
+  height: auto;
+  display: block;
+  margin: 1.5em 0;
+  border: none;
+  border-radius: var(--border-radius);
+}
+
+/* YouTube embeds specific styling */
+iframe[src*="youtube.com"],
+iframe[src*="youtu.be"] {
+  aspect-ratio: 16 / 9;
+  width: 100%;
+  height: auto;
+}
+
+/* Vimeo embeds specific styling */
+iframe[src*="vimeo.com"] {
+  aspect-ratio: 16 / 9;
+  width: 100%;
+  height: auto;
+}
+
+/* Images in articles */
+img {
+  max-width: 100%;
+  height: auto;
+  display: block;
+  margin: 1.5em 0;
+  border-radius: var(--border-radius);
+}
