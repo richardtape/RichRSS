@@ -21,6 +21,7 @@ final class Article {
     var feedTitle: String
     var imageUrl: String?
     var isRead: Bool = false
+    var isSaved: Bool = false
 
     init(
         id: String,
