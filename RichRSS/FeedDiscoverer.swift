@@ -14,6 +14,7 @@ actor FeedDiscoverer {
     private let commonFeedPaths = [
         "/feed",           // WordPress default
         "/feed/",          // WordPress with trailing slash
+        "/feeds/main",     // Daring Fireball and similar
         "/rss",            // Common alternative
         "/rss.xml",        // Drupal standard
         "/feed.xml",       // Generic feed location
