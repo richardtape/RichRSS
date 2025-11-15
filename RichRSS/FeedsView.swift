@@ -42,6 +42,13 @@ struct FeedsView: View {
         articles.filter { $0.feedTitle == feed.title && !$0.isRead }.count
     }
 
+    func markAllAsRead(for feed: Feed) {
+        let feedArticles = articles.filter { $0.feedTitle == feed.title }
+        for article in feedArticles {
+            article.isRead = true
+        }
+    }
+
     var body: some View {
         NavigationStack {
             VStack(spacing: 0) {
@@ -126,6 +133,20 @@ struct FeedsView: View {
                                 .padding(.vertical, 8)
                             }
                             .buttonStyle(PlainButtonStyle())
+                            .contextMenu {
+                                Button {
+                                    selectedFeedForFilter = feed
+                                    selectedTab = 0
+                                } label: {
+                                    Label("View All Posts", systemImage: "list.bullet")
+                                }
+
+                                Button {
+                                    markAllAsRead(for: feed)
+                                } label: {
+                                    Label("Mark All As Read", systemImage: "checkmark.circle")
+                                }
+                            }
                         }
                         .onDelete(perform: deleteFeeds)
                     }
