@@ -87,9 +87,24 @@ struct FeedsView: View {
                                 selectedTab = 0
                             }) {
                                 HStack(alignment: .top, spacing: 12) {
-                                    // Icon column (36x36)
-                                    FaviconView(faviconUrl: feed.faviconUrl, feedTitle: feed.title)
-                                        .frame(width: 36, height: 36)
+                                    // Icon column (36x36) with favorite badge
+                                    ZStack(alignment: .bottomTrailing) {
+                                        FaviconView(faviconUrl: feed.faviconUrl, feedTitle: feed.title)
+                                            .frame(width: 36, height: 36)
+
+                                        if feed.isFavorite {
+                                            Image(systemName: "star.fill")
+                                                .font(.system(size: 12))
+                                                .foregroundColor(.yellow)
+                                                .background(
+                                                    Circle()
+                                                        .fill(Color.white)
+                                                        .frame(width: 16, height: 16)
+                                                )
+                                                .offset(x: 4, y: 4)
+                                        }
+                                    }
+                                    .frame(width: 36, height: 36)
 
                                     // Feed Info
                                     VStack(alignment: .leading, spacing: 6) {
@@ -145,6 +160,15 @@ struct FeedsView: View {
                                     markAllAsRead(for: feed)
                                 } label: {
                                     Label("Mark All As Read", systemImage: "checkmark.circle")
+                                }
+
+                                Button {
+                                    feed.isFavorite.toggle()
+                                } label: {
+                                    Label(
+                                        feed.isFavorite ? "Unfavorite" : "Favorite",
+                                        systemImage: feed.isFavorite ? "star.slash.fill" : "star.fill"
+                                    )
                                 }
                             }
                         }

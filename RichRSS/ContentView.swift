@@ -411,8 +411,20 @@ struct ArticleListItemView: View {
         }
     }
 
+    var isFromFavoriteFeed: Bool {
+        feeds.first(where: { $0.title == article.feedTitle })?.isFavorite ?? false
+    }
+
     var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
+        HStack(spacing: 0) {
+            // Left accent bar for favorited feeds
+            if isFromFavoriteFeed {
+                Rectangle()
+                    .fill(Color.yellow)
+                    .frame(width: 4)
+            }
+
+            VStack(alignment: .leading, spacing: 8) {
             // Title
             Text(article.title)
                 .font(.system(.headline, design: .default))
@@ -438,10 +450,17 @@ struct ArticleListItemView: View {
                         selectedFeedForFilter = feed
                     }
                 }) {
-                    Text(article.feedTitle)
-                        .font(.caption2)
-                        .foregroundColor(.blue)
-                        .underline()
+                    HStack(spacing: 4) {
+                        if isFromFavoriteFeed {
+                            Image(systemName: "star.fill")
+                                .font(.system(size: 10))
+                                .foregroundColor(.yellow)
+                        }
+                        Text(article.feedTitle)
+                            .font(.caption2)
+                            .foregroundColor(.blue)
+                            .underline()
+                    }
                 }
                 .buttonStyle(PlainButtonStyle())
 
@@ -462,6 +481,8 @@ struct ArticleListItemView: View {
         }
         .padding(.vertical, 12)
         .padding(.horizontal, 12)
+        }
+        .background(isFromFavoriteFeed ? Color.yellow.opacity(0.05) : Color.clear)
     }
 
     /// Returns relative time in format: "< 1hr ago", "2h ago", "3d ago", etc.
