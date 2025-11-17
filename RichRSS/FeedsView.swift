@@ -10,9 +10,10 @@ import SwiftData
 
 struct FeedsView: View {
     @Environment(\.modelContext) private var modelContext
+    @Environment(\.colorScheme) private var systemColorScheme
     @Query(sort: \Feed.title) private var feeds: [Feed]
     @Query(sort: \Article.pubDate, order: .reverse) private var articles: [Article]
-    @AppStorage("selectedThemeStyle") private var selectedThemeStyle: String = "light"
+    @AppStorage("selectedThemeStyle") private var selectedThemeStyle: String = "system"
     @Binding var selectedFeedForFilter: Feed?
     @Binding var selectedTab: Int
     @State private var showAddFeed = false
@@ -28,6 +29,9 @@ struct FeedsView: View {
     var currentTheme: Theme {
         let style: ThemeStyle
         switch selectedThemeStyle {
+        case "system":
+            // Use system color scheme
+            style = systemColorScheme == .dark ? .dark : .light
         case "dark":
             style = .dark
         case "sepia":

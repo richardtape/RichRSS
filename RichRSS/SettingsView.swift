@@ -10,7 +10,7 @@ import SwiftData
 
 struct SettingsView: View {
     @Environment(\.modelContext) private var modelContext
-    @AppStorage("selectedThemeStyle") private var selectedThemeStyle: String = "light"
+    @AppStorage("selectedThemeStyle") private var selectedThemeStyle: String = "system"
     @State private var showResetConfirmation = false
 
     var body: some View {
@@ -22,6 +22,7 @@ struct SettingsView: View {
                 Form {
                     Section("Appearance") {
                         Picker("Theme", selection: $selectedThemeStyle) {
+                            Text("System").tag("system")
                             Text("Light").tag("light")
                             Text("Dark").tag("dark")
                             Text("Sepia").tag("sepia")
@@ -69,8 +70,8 @@ struct SettingsView: View {
             try modelContext.save()
             print("✅ Model context saved after deletion")
 
-            // Reset theme to light
-            selectedThemeStyle = "light"
+            // Reset theme to system default
+            selectedThemeStyle = "system"
 
             // Clear HTML cache
             ArticleHTMLCache.shared.clearCache()
