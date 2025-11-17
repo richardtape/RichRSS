@@ -149,7 +149,7 @@ struct ArticleWebView: UIViewRepresentable {
             </style>
         </head>
         <body>
-            <h1>\(escapeHTML(article.title))</h1>
+            <h1>\(escapeHTML(HTMLStripper.decodeHTMLEntities(article.title)))</h1>
             \(cleanContent)
             \(linkHTML)
         </body>

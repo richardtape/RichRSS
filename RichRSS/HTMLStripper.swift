@@ -84,9 +84,36 @@ struct HTMLStripper {
         return excerpt + (hasMore ? "…" : "")
     }
 
-    private static func decodeHTMLEntities(_ html: String) -> String {
-        var result = html
+    /// Decodes HTML entities in a string using native iOS capabilities
+    /// Handles all standard HTML entities including numeric character references
+    /// Can be called independently to decode entities in any text
+    static func decodeHTMLEntities(_ text: String) -> String {
+        guard !text.isEmpty else { return text }
 
+        // Use NSAttributedString's HTML parsing for comprehensive entity decoding
+        // This handles all named entities and numeric character references (&#8217;, &#x2019;, etc.)
+        let html = "<span>\(text)</span>"
+
+        guard let data = html.data(using: .utf8) else { return text }
+
+        let options: [NSAttributedString.DocumentReadingOptionKey: Any] = [
+            .documentType: NSAttributedString.DocumentType.html,
+            .characterEncoding: String.Encoding.utf8.rawValue
+        ]
+
+        if let attributedString = try? NSAttributedString(data: data, options: options, documentAttributes: nil) {
+            return attributedString.string
+        }
+
+        // Fallback to manual decoding if NSAttributedString fails
+        return manualDecodeEntities(text)
+    }
+
+    /// Fallback method for decoding common HTML entities manually
+    private static func manualDecodeEntities(_ text: String) -> String {
+        var result = text
+
+        // Expanded set of common HTML entities
         let entities: [String: String] = [
             "&amp;": "&",
             "&lt;": "<",
@@ -95,10 +122,25 @@ struct HTMLStripper {
             "&apos;": "'",
             "&nbsp;": " ",
             "&#39;": "'",
-            "&#8217;": "'",
-            "&#8216;": "'",
-            "&#8220;": "\u{201C}",
-            "&#8221;": "\u{201D}"
+            "&#8217;": "'",  // Right single quotation mark (curly apostrophe)
+            "&#8216;": "'",  // Left single quotation mark
+            "&#8220;": """,  // Left double quotation mark
+            "&#8221;": """,  // Right double quotation mark
+            "&#8211;": "–",  // En dash
+            "&#8212;": "—",  // Em dash
+            "&#8230;": "…",  // Horizontal ellipsis
+            "&mdash;": "—",
+            "&ndash;": "–",
+            "&hellip;": "…",
+            "&copy;": "©",
+            "&reg;": "®",
+            "&trade;": "™",
+            "&bull;": "•",
+            "&middot;": "·",
+            "&ldquo;": """,
+            "&rdquo;": """,
+            "&lsquo;": "'",
+            "&rsquo;": "'"
         ]
 
         for (entity, character) in entities {

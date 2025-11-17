@@ -430,7 +430,7 @@ struct ArticleListItemView: View {
 
             VStack(alignment: .leading, spacing: 8) {
             // Title
-            Text(article.title)
+            Text(HTMLStripper.decodeHTMLEntities(article.title))
                 .font(.system(.headline, design: .default))
                 .fontWeight(.semibold)
                 .lineLimit(3)
@@ -460,7 +460,7 @@ struct ArticleListItemView: View {
                                 .font(.system(size: 10))
                                 .foregroundColor(.yellow)
                         }
-                        Text(article.feedTitle)
+                        Text(HTMLStripper.decodeHTMLEntities(article.feedTitle))
                             .font(.caption2)
                             .foregroundColor(.blue)
                             .underline()
@@ -566,7 +566,7 @@ struct ArticleHeaderView: View {
             Spacer()
 
             VStack(alignment: .trailing, spacing: 2) {
-                Text(article.feedTitle)
+                Text(HTMLStripper.decodeHTMLEntities(article.feedTitle))
                     .font(.caption)
                     .fontWeight(.semibold)
                     .foregroundColor(.blue)

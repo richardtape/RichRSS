@@ -112,7 +112,7 @@ struct FeedsView: View {
 
                                     // Feed Info
                                     VStack(alignment: .leading, spacing: 6) {
-                                        Text(feed.title)
+                                        Text(HTMLStripper.decodeHTMLEntities(feed.title))
                                             .font(.headline)
                                             .foregroundColor(.primary)
                                         Text(feed.feedUrl)
