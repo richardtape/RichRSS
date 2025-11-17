@@ -12,8 +12,17 @@ actor FeedFetcher {
 
     private let parser = RSSFeedParser()
 
-    func fetchFeed(from urlString: String, feedTitle: String) async throws -> [Article] {
-        guard let url = URL(string: urlString) else {
+    /// Upgrades http:// URLs to https://
+    private func upgradeToHttps(_ urlString: String) -> String {
+        if urlString.lowercased().starts(with: "http://") {
+            return "https://" + urlString.dropFirst(7)
+        }
+        return urlString
+    }
+
+    func fetchFeed(from urlString: String, feedTitle: String) async throws -> (articles: [Article], actualUrl: String) {
+        let upgradeUrlString = upgradeToHttps(urlString)
+        guard let url = URL(string: upgradeUrlString) else {
             throw NSError(domain: "FeedFetcher", code: -1, userInfo: [NSLocalizedDescriptionKey: "Invalid URL"])
         }
 
@@ -25,7 +34,7 @@ actor FeedFetcher {
 
         do {
             let articles = try parser.parseFeed(from: data, feedTitle: feedTitle)
-            return articles
+            return (articles: articles, actualUrl: upgradeUrlString)
         } catch {
             throw error
         }
@@ -37,7 +46,7 @@ actor FeedFetcher {
 
         for feed in feeds {
             do {
-                let articles = try await fetchFeed(from: feed.feedUrl, feedTitle: feed.title)
+                let (articles, _) = try await fetchFeed(from: feed.feedUrl, feedTitle: feed.title)
                 results[feed.id] = articles
             } catch {
                 print("⚠️ Failed to refresh feed '\(feed.title)': \(error.localizedDescription)")
@@ -53,8 +62,9 @@ actor FeedFetcher {
     /// - Parameter urlString: URL to the RSS/Atom feed
     /// - Returns: Tuple of (feedTitle, articles) extracted from the feed
     /// - Throws: Network or parsing errors
-    func fetchFeedWithTitle(from urlString: String) async throws -> (title: String, articles: [Article]) {
-        guard let url = URL(string: urlString) else {
+    func fetchFeedWithTitle(from urlString: String) async throws -> (title: String, articles: [Article], actualUrl: String) {
+        let upgradeUrlString = upgradeToHttps(urlString)
+        guard let url = URL(string: upgradeUrlString) else {
             throw NSError(domain: "FeedFetcher", code: -1, userInfo: [NSLocalizedDescriptionKey: "Invalid URL"])
         }
 
@@ -65,7 +75,8 @@ actor FeedFetcher {
         }
 
         do {
-            return try parser.parseFeedWithTitle(from: data)
+            let (title, articles) = try parser.parseFeedWithTitle(from: data)
+            return (title: title, articles: articles, actualUrl: upgradeUrlString)
         } catch {
             throw error
         }
@@ -76,7 +87,8 @@ actor FeedFetcher {
     /// - Parameter urlString: The URL to validate
     /// - Returns: True if the URL is a valid RSS/Atom feed
     func isRSSFeed(_ urlString: String) async -> Bool {
-        guard let url = URL(string: urlString) else {
+        let upgradeUrlString = upgradeToHttps(urlString)
+        guard let url = URL(string: upgradeUrlString) else {
             return false
         }
 

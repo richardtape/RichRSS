@@ -215,7 +215,8 @@ struct FeedsView: View {
 
             // Fetch the feed to get its title and article count
             discoveryStatus = "Fetching feed information..."
-            let (foundTitle, articles) = try await FeedFetcher.shared.fetchFeedWithTitle(from: finalFeedUrl)
+            let (foundTitle, articles, actualFeedUrl) = try await FeedFetcher.shared.fetchFeedWithTitle(from: finalFeedUrl)
+            finalFeedUrl = actualFeedUrl  // Use the upgraded URL (https if http was provided)
 
             // Save discovered info and transition to confirmation screen
             await MainActor.run {
@@ -256,7 +257,8 @@ struct FeedsView: View {
 
             // Fetch the feed with user-confirmed title
             discoveryStatus = "Fetching feed..."
-            let articles = try await FeedFetcher.shared.fetchFeed(from: finalFeedUrl, feedTitle: title)
+            let (articles, actualFeedUrl) = try await FeedFetcher.shared.fetchFeed(from: finalFeedUrl, feedTitle: title)
+            finalFeedUrl = actualFeedUrl  // Use the upgraded URL (https if http was provided)
 
             // Fetch favicon (don't block on this)
             let siteUrl = try? extractSiteUrl(from: finalFeedUrl)

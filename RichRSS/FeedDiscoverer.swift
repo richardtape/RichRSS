@@ -78,10 +78,13 @@ actor FeedDiscoverer {
             )
         }
 
-        // Add scheme if missing
+        // Add scheme if missing, or upgrade http to https
         var urlToValidate = trimmedUrl
         if !trimmedUrl.contains("://") {
             urlToValidate = "https://" + trimmedUrl
+        } else if trimmedUrl.lowercased().starts(with: "http://") {
+            // Upgrade http to https
+            urlToValidate = "https://" + trimmedUrl.dropFirst(7)
         }
 
         // Validate URL structure
