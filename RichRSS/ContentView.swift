@@ -10,8 +10,9 @@ import SwiftData
 
 struct ContentView: View {
     @Environment(AppStartupManager.self) private var startupManager
+    @Environment(\.colorScheme) private var systemColorScheme
     @State private var selectedTab = 0
-    @AppStorage("selectedThemeStyle") private var selectedThemeStyle: String = "light"
+    @AppStorage("selectedThemeStyle") private var selectedThemeStyle: String = "system"
     @State private var selectedArticle: Article?
     @State private var showingArticle = false
     @State private var selectedFeedForFilter: Feed? = nil
@@ -19,6 +20,9 @@ struct ContentView: View {
     var currentTheme: Theme {
         let style: ThemeStyle
         switch selectedThemeStyle {
+        case "system":
+            // Use system color scheme
+            style = systemColorScheme == .dark ? .dark : .light
         case "dark":
             style = .dark
         case "sepia":
@@ -83,7 +87,7 @@ struct ContentView: View {
         .withTheme(currentTheme)
         .foregroundColor(currentTheme.textColor)
         .accentColor(currentTheme.accentColor)
-        .preferredColorScheme(currentTheme.style == .dark ? .dark : .light)
+        .preferredColorScheme(selectedThemeStyle == "system" ? nil : (currentTheme.style == .dark ? .dark : .light))
         .animation(.easeInOut(duration: 0.2), value: showingArticle)
     }
 }
