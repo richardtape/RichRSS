@@ -14,6 +14,7 @@ struct RichRSSApp: App {
         let schema = Schema([
             Feed.self,
             Article.self,
+            AppSettings.self,
         ])
         let modelConfiguration = ModelConfiguration(schema: schema, isStoredInMemoryOnly: false)
 
