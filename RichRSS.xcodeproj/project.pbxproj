@@ -29,9 +29,22 @@
 		9B1EF4292EC07A3C00976143 /* RichRSSUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = RichRSSUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
+/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		9B0E06292ECC350500E8C162 /* Exceptions for "RichRSS" folder in "RichRSS" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = 9B1EF40C2EC07A3B00976143 /* RichRSS */;
+		};
+/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
+
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		9B1EF40F2EC07A3B00976143 /* RichRSS */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				9B0E06292ECC350500E8C162 /* Exceptions for "RichRSS" folder in "RichRSS" target */,
+			);
 			path = RichRSS;
 			sourceTree = "<group>";
 		};
@@ -399,7 +412,7 @@
 				DEVELOPMENT_TEAM = 9BQWF7Y4MW;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_FILE = "";
+				INFOPLIST_FILE = RichRSS/Info.plist;
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -429,7 +442,7 @@
 				DEVELOPMENT_TEAM = 9BQWF7Y4MW;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_FILE = "";
+				INFOPLIST_FILE = RichRSS/Info.plist;
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;

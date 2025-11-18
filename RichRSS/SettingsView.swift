@@ -123,7 +123,7 @@ struct SettingsView: View {
     private func handleBackgroundRefreshToggle(enabled: Bool) {
         if enabled {
             print("ℹ️ Background refresh enabled")
-            BackgroundRefreshManager.shared.registerBackgroundTasks()
+            BackgroundRefreshManager.shared.scheduleBackgroundRefresh()
         } else {
             print("ℹ️ Background refresh disabled")
             BackgroundRefreshManager.shared.cancelBackgroundTasks()
