@@ -480,7 +480,7 @@ struct ArticleListItemView: View {
                     .font(.caption2)
                     .foregroundColor(.secondary)
 
-                Text(relativeTime(article.pubDate))
+                Text(article.pubDate.relativeTimeString())
                     .font(.caption2)
                     .foregroundColor(.secondary)
 
@@ -497,41 +497,6 @@ struct ArticleListItemView: View {
         .background(isFromFavoriteFeed ? Color.yellow.opacity(0.05) : Color.clear)
     }
 
-    /// Returns relative time in format: "< 1hr ago", "2h ago", "3d ago", etc.
-    private func relativeTime(_ date: Date) -> String {
-        let now = Date()
-        let intervalSeconds = now.timeIntervalSince(date)
-
-        // Less than 1 hour
-        if intervalSeconds < 3600 {
-            return "< 1hr ago"
-        }
-
-        // Less than 24 hours (show in hours)
-        if intervalSeconds < 86400 {
-            let hours = Int(intervalSeconds / 3600)
-            let rounded = max(1, hours)  // Round up to at least 1h
-            return "\(rounded)h ago"
-        }
-
-        // 24+ hours (show in days)
-        let calendar = Calendar.current
-        let days = calendar.dateComponents([.day], from: date, to: now).day ?? 0
-        if days < 7 {
-            return "\(days)d ago"
-        }
-
-        // 7+ days (show in weeks or formatted date)
-        if days < 30 {
-            let weeks = days / 7
-            return "\(weeks)w ago"
-        }
-
-        // Fallback to formatted date
-        let formatter = DateFormatter()
-        formatter.dateFormat = "MMM d"
-        return formatter.string(from: date)
-    }
 }
 
 struct ArticleDetailViewContent: View {
@@ -1309,7 +1274,7 @@ struct ConfirmFeedView: View {
                                 .font(.caption2)
                                 .foregroundColor(.secondary)
 
-                            Text(relativeTimeString(latestArticle.pubDate))
+                            Text(latestArticle.pubDate.relativeTimeString())
                                 .font(.caption2)
                                 .foregroundColor(.secondary)
 
@@ -1331,33 +1296,6 @@ struct ConfirmFeedView: View {
             Spacer()
         }
         .padding(.vertical)
-    }
-
-    /// Returns relative time in format: "< 1hr ago", "2h ago", "3d ago", etc.
-    private func relativeTimeString(_ date: Date) -> String {
-        let now = Date()
-        let intervalSeconds = now.timeIntervalSince(date)
-
-        // Less than 1 hour
-        if intervalSeconds < 3600 {
-            return "< 1hr ago"
-        }
-
-        // Less than 24 hours (show in hours)
-        if intervalSeconds < 86400 {
-            let hours = Int(intervalSeconds / 3600)
-            return "\(hours)h ago"
-        }
-
-        // Less than 7 days (show in days)
-        if intervalSeconds < 604800 {
-            let days = Int(intervalSeconds / 86400)
-            return "\(days)d ago"
-        }
-
-        // Otherwise show in weeks
-        let weeks = Int(intervalSeconds / 604800)
-        return "\(weeks)w ago"
     }
 }
 
