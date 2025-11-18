@@ -10,8 +10,20 @@ import SwiftData
 
 struct SettingsView: View {
     @Environment(\.modelContext) private var modelContext
+    @Query private var settingsObjects: [AppSettings]
     @AppStorage("selectedThemeStyle") private var selectedThemeStyle: String = "system"
     @State private var showResetConfirmation = false
+
+    // Get or create settings
+    private var settings: AppSettings {
+        if let existing = settingsObjects.first {
+            return existing
+        } else {
+            let newSettings = AppSettings()
+            modelContext.insert(newSettings)
+            return newSettings
+        }
+    }
 
     var body: some View {
         NavigationStack {
@@ -27,6 +39,58 @@ struct SettingsView: View {
                             Text("Dark").tag("dark")
                             Text("Sepia").tag("sepia")
                         }
+                    }
+
+                    Section {
+                        Toggle(isOn: Binding(
+                            get: { settings.backgroundRefreshEnabled },
+                            set: { newValue in
+                                settings.backgroundRefreshEnabled = newValue
+                                handleBackgroundRefreshToggle(enabled: newValue)
+                            }
+                        )) {
+                            VStack(alignment: .leading, spacing: 4) {
+                                Text("Background Refresh")
+                                    .font(.body)
+                                Text("Automatically refresh feeds in the background")
+                                    .font(.caption)
+                                    .foregroundColor(.secondary)
+                            }
+                        }
+
+                        if settings.backgroundRefreshEnabled {
+                            Toggle(isOn: Binding(
+                                get: { settings.wifiOnlyRefresh },
+                                set: { newValue in
+                                    settings.wifiOnlyRefresh = newValue
+                                }
+                            )) {
+                                VStack(alignment: .leading, spacing: 4) {
+                                    Text("Wi-Fi Only")
+                                        .font(.body)
+                                    Text("Refresh feeds only when connected to Wi-Fi")
+                                        .font(.caption)
+                                        .foregroundColor(.secondary)
+                                }
+                            }
+                            .disabled(!settings.backgroundRefreshEnabled)
+
+                            if let lastRefresh = settings.lastBackgroundRefreshDate {
+                                HStack {
+                                    Text("Last Background Refresh")
+                                        .font(.caption)
+                                    Spacer()
+                                    Text(lastRefresh.relativeTimeString())
+                                        .font(.caption)
+                                        .foregroundColor(.secondary)
+                                }
+                            }
+                        }
+                    } header: {
+                        Text("Feed Refresh")
+                    } footer: {
+                        Text("Background refresh requires iOS permission and may not occur if Low Power Mode is enabled or battery is low. iOS determines the optimal refresh schedule based on your usage patterns.")
+                            .font(.caption)
                     }
 
                     Section("About") {
@@ -56,6 +120,18 @@ struct SettingsView: View {
         }
     }
 
+    private func handleBackgroundRefreshToggle(enabled: Bool) {
+        if enabled {
+            print("ℹ️ Background refresh enabled - will be implemented in Phase 6")
+            // TODO: Phase 6 - Register background tasks
+            // BackgroundRefreshManager.shared.registerBackgroundTasks()
+        } else {
+            print("ℹ️ Background refresh disabled - will be implemented in Phase 6")
+            // TODO: Phase 6 - Cancel background tasks
+            // BackgroundRefreshManager.shared.cancelBackgroundTasks()
+        }
+    }
+
     private func resetAllData() {
         do {
             // Delete all articles first
@@ -65,6 +141,10 @@ struct SettingsView: View {
             // Delete all feeds
             try modelContext.delete(model: Feed.self)
             print("✅ Successfully deleted all feeds")
+
+            // Delete all settings
+            try modelContext.delete(model: AppSettings.self)
+            print("✅ Successfully deleted all settings")
 
             // Save the model context to persist deletions
             try modelContext.save()
