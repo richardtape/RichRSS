@@ -227,6 +227,16 @@ struct FeedsView: View {
     /// Discovers a feed URL and fetches its details for confirmation
     /// This will show the feed details but won't add it to the database yet
     private func discoverAndShowConfirmation(url: String) async {
+        // Check for duplicate feeds BEFORE doing any discovery work
+        if let existingFeed = findExistingFeed(for: url) {
+            await MainActor.run {
+                errorMessage = "This feed has already been added as '\(existingFeed.title)'"
+                isLoading = false
+                discoveryStatus = nil
+            }
+            return
+        }
+
         do {
             var finalFeedUrl = url
 
@@ -243,6 +253,16 @@ struct FeedsView: View {
                     }
                 }
                 finalFeedUrl = discovered.feedUrl
+
+                // Check again with the discovered feed URL in case it's different
+                if let existingFeed = findExistingFeed(for: finalFeedUrl) {
+                    await MainActor.run {
+                        errorMessage = "This feed has already been added as '\(existingFeed.title)'"
+                        isLoading = false
+                        discoveryStatus = nil
+                    }
+                    return
+                }
             }
 
             // Fetch the feed to get its title and article count
@@ -271,6 +291,16 @@ struct FeedsView: View {
 
     /// Adds a confirmed feed with URL and title
     private func addConfirmedFeed(url: String, title: String) async {
+        // Check for duplicate feeds before adding
+        if let existingFeed = findExistingFeed(for: url) {
+            await MainActor.run {
+                errorMessage = "This feed has already been added as '\(existingFeed.title)'"
+                isLoading = false
+                discoveryStatus = nil
+            }
+            return
+        }
+
         do {
             // Discover feed URL if needed
             var finalFeedUrl = url
@@ -285,6 +315,16 @@ struct FeedsView: View {
                     }
                 }
                 finalFeedUrl = discovered.feedUrl
+
+                // Check again with the discovered feed URL in case it's different
+                if let existingFeed = findExistingFeed(for: finalFeedUrl) {
+                    await MainActor.run {
+                        errorMessage = "This feed has already been added as '\(existingFeed.title)'"
+                        isLoading = false
+                        discoveryStatus = nil
+                    }
+                    return
+                }
             }
 
             // Fetch the feed with user-confirmed title
@@ -326,6 +366,36 @@ struct FeedsView: View {
                 isLoading = false
                 discoveryStatus = nil
             }
+        }
+    }
+
+    /// Normalizes a URL for comparison by removing the scheme (http/https)
+    /// This allows us to treat http://example.com and https://example.com as the same feed
+    private func normalizeURLForComparison(_ urlString: String) -> String {
+        var normalized = urlString.lowercased().trimmingCharacters(in: .whitespacesAndNewlines)
+
+        // Remove http:// or https:// prefix
+        if normalized.hasPrefix("https://") {
+            normalized = String(normalized.dropFirst(8))
+        } else if normalized.hasPrefix("http://") {
+            normalized = String(normalized.dropFirst(7))
+        }
+
+        // Remove trailing slash
+        if normalized.hasSuffix("/") {
+            normalized = String(normalized.dropLast())
+        }
+
+        return normalized
+    }
+
+    /// Checks if a feed with the given URL already exists
+    /// Returns the existing feed if found, nil otherwise
+    private func findExistingFeed(for urlString: String) -> Feed? {
+        let normalizedUrl = normalizeURLForComparison(urlString)
+
+        return feeds.first { feed in
+            normalizeURLForComparison(feed.feedUrl) == normalizedUrl
         }
     }
 
