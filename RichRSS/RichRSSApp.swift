@@ -35,8 +35,22 @@ struct RichRSSApp: App {
                     if startupManager == nil {
                         startupManager = AppStartupManager(modelContainer: sharedModelContainer)
                     }
+                    checkAndRegisterBackgroundRefresh()
                 }
         }
         .modelContainer(sharedModelContainer)
+    }
+
+    /// Checks settings and registers background refresh if enabled
+    private func checkAndRegisterBackgroundRefresh() {
+        Task { @MainActor in
+            let context = ModelContext(sharedModelContainer)
+            let descriptor = FetchDescriptor<AppSettings>()
+
+            if let settings = try? context.fetch(descriptor).first,
+               settings.backgroundRefreshEnabled {
+                BackgroundRefreshManager.shared.registerBackgroundTasks()
+            }
+        }
     }
 }

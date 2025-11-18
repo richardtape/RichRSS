@@ -122,13 +122,11 @@ struct SettingsView: View {
 
     private func handleBackgroundRefreshToggle(enabled: Bool) {
         if enabled {
-            print("ℹ️ Background refresh enabled - will be implemented in Phase 6")
-            // TODO: Phase 6 - Register background tasks
-            // BackgroundRefreshManager.shared.registerBackgroundTasks()
+            print("ℹ️ Background refresh enabled")
+            BackgroundRefreshManager.shared.registerBackgroundTasks()
         } else {
-            print("ℹ️ Background refresh disabled - will be implemented in Phase 6")
-            // TODO: Phase 6 - Cancel background tasks
-            // BackgroundRefreshManager.shared.cancelBackgroundTasks()
+            print("ℹ️ Background refresh disabled")
+            BackgroundRefreshManager.shared.cancelBackgroundTasks()
         }
     }
 
