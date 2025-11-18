@@ -31,8 +31,9 @@ class BackgroundRefreshManager: ObservableObject {
 
     // MARK: - Registration
 
-    func registerBackgroundTasks() {
-        // Register handler
+    /// Registers the background task handler. Must be called before app finishes launching (in init).
+    func registerBackgroundTaskHandlers() {
+        // Register handler - this MUST happen before app finishes launching
         BGTaskScheduler.shared.register(
             forTaskWithIdentifier: taskIdentifier,
             using: nil
@@ -42,12 +43,16 @@ class BackgroundRefreshManager: ObservableObject {
             }
         }
 
-        // Schedule next refresh
-        scheduleNextRefresh()
-
-        print("✅ Background refresh registered and scheduled")
+        print("✅ Background refresh handler registered")
     }
 
+    /// Schedules a background refresh task. Can be called after launch.
+    func scheduleBackgroundRefresh() {
+        scheduleNextRefresh()
+        print("✅ Background refresh scheduled")
+    }
+
+    /// Cancels all scheduled background refresh tasks
     func cancelBackgroundTasks() {
         BGTaskScheduler.shared.cancel(taskRequestWithIdentifier: taskIdentifier)
         print("✅ Background refresh cancelled")

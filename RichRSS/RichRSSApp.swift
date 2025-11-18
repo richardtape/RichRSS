@@ -27,6 +27,12 @@ struct RichRSSApp: App {
 
     @State private var startupManager: AppStartupManager?
 
+    init() {
+        // Register background task handlers BEFORE app finishes launching
+        // This must happen in init(), not in onAppear or later
+        BackgroundRefreshManager.shared.registerBackgroundTaskHandlers()
+    }
+
     var body: some Scene {
         WindowGroup {
             ContentView()
@@ -35,21 +41,21 @@ struct RichRSSApp: App {
                     if startupManager == nil {
                         startupManager = AppStartupManager(modelContainer: sharedModelContainer)
                     }
-                    checkAndRegisterBackgroundRefresh()
+                    checkAndScheduleBackgroundRefresh()
                 }
         }
         .modelContainer(sharedModelContainer)
     }
 
-    /// Checks settings and registers background refresh if enabled
-    private func checkAndRegisterBackgroundRefresh() {
+    /// Checks settings and schedules background refresh if enabled
+    private func checkAndScheduleBackgroundRefresh() {
         Task { @MainActor in
             let context = ModelContext(sharedModelContainer)
             let descriptor = FetchDescriptor<AppSettings>()
 
             if let settings = try? context.fetch(descriptor).first,
                settings.backgroundRefreshEnabled {
-                BackgroundRefreshManager.shared.registerBackgroundTasks()
+                BackgroundRefreshManager.shared.scheduleBackgroundRefresh()
             }
         }
     }
