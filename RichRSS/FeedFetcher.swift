@@ -72,16 +72,57 @@ actor FeedFetcher {
         }
     }
 
-    /// Refreshes all feeds and returns results with per-feed success/failure info
-    /// - Parameter feeds: Array of feeds to refresh
+    /// Refreshes all feeds concurrently and returns results with per-feed success/failure info
+    /// - Parameters:
+    ///   - feeds: Array of feeds to refresh
+    ///   - maxConcurrent: Maximum number of concurrent refresh operations (default: 8)
     /// - Returns: Array of FeedRefreshResult with success status and timestamp for each feed
-    func refreshAllFeeds(feeds: [Feed]) async -> [FeedRefreshResult] {
-        var results: [FeedRefreshResult] = []
-
-        for feed in feeds {
-            let result = await refreshFeed(feed)
-            results.append(result)
+    func refreshAllFeeds(feeds: [Feed], maxConcurrent: Int = 8) async -> [FeedRefreshResult] {
+        guard !feeds.isEmpty else {
+            return []
         }
+
+        let startTime = Date()
+
+        // Use TaskGroup for concurrent fetching with concurrency limit
+        let results = await withTaskGroup(of: FeedRefreshResult.self, returning: [FeedRefreshResult].self) { group in
+            var results: [FeedRefreshResult] = []
+            var activeTaskCount = 0
+            var feedIndex = 0
+
+            // Initial batch of tasks up to maxConcurrent
+            while feedIndex < feeds.count && activeTaskCount < maxConcurrent {
+                let feed = feeds[feedIndex]
+                group.addTask {
+                    await self.refreshFeed(feed)
+                }
+                feedIndex += 1
+                activeTaskCount += 1
+            }
+
+            // As tasks complete, add new ones to maintain concurrency limit
+            while let result = await group.next() {
+                results.append(result)
+                activeTaskCount -= 1
+
+                // Add next feed if available
+                if feedIndex < feeds.count {
+                    let feed = feeds[feedIndex]
+                    group.addTask {
+                        await self.refreshFeed(feed)
+                    }
+                    feedIndex += 1
+                    activeTaskCount += 1
+                }
+            }
+
+            return results
+        }
+
+        // Log performance metrics
+        let duration = Date().timeIntervalSince(startTime)
+        let successCount = results.filter { $0.success }.count
+        print("✅ Parallel refresh completed in \(String(format: "%.2f", duration))s: \(successCount)/\(results.count) feeds successful")
 
         return results
     }
