@@ -124,7 +124,11 @@ struct FeedsView: View {
                                         let count = unreadCount(for: feed)
                                         HStack(spacing: 6) {
                                             if let lastUpdated = feed.lastUpdated {
-                                                Text("Last updated: \(lastUpdated, style: .date)")
+                                                Text("Last updated: \(lastUpdated.relativeTimeString())")
+                                                    .font(.caption2)
+                                                    .foregroundColor(.secondary)
+                                            } else {
+                                                Text("Never updated")
                                                     .font(.caption2)
                                                     .foregroundColor(.secondary)
                                             }
