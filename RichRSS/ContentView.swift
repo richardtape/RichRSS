@@ -356,39 +356,47 @@ struct ArticlesListViewWithSelection: View {
 
     private func refreshAllFeeds() async {
         print("🔄 Starting feed refresh...")
-        do {
-            let feedsToRefresh = feeds
-            if feedsToRefresh.isEmpty {
-                print("⚠️ No feeds to refresh")
-                return
-            }
+        let feedsToRefresh = feeds
+        if feedsToRefresh.isEmpty {
+            print("⚠️ No feeds to refresh")
+            return
+        }
 
-            let results = try await FeedFetcher.shared.refreshAllFeeds(feeds: feedsToRefresh)
+        let results = await FeedFetcher.shared.refreshAllFeeds(feeds: feedsToRefresh)
 
-            await MainActor.run {
-                // Add new articles from each feed
-                for (feedId, newArticles) in results {
-                    let feedTitle = feeds.first(where: { $0.id == feedId })?.title ?? ""
+        await MainActor.run {
+            // Process refresh results for all feeds
+            for result in results {
+                if result.success {
+                    // Successfully refreshed - add articles and update timestamp
+                    let feedTitle = feeds.first(where: { $0.id == result.feedId })?.title ?? ""
                     let existingGuids = Set(articles.filter { $0.feedTitle == feedTitle }.compactMap { $0.guid })
 
-                    for article in newArticles {
+                    for article in result.articles {
                         // Only add if not already present (avoid duplicates)
                         if !existingGuids.contains(article.guid ?? "") {
                             modelContext.insert(article)
                         }
                     }
-                }
 
-                // Update feed's lastUpdated timestamp
-                for feed in feeds {
-                    feed.lastUpdated = Date()
+                    // Update lastUpdated timestamp and clear any previous errors
+                    if let feed = feeds.first(where: { $0.id == result.feedId }) {
+                        feed.lastUpdated = result.timestamp
+                        feed.lastRefreshError = nil
+                    }
+                } else {
+                    // Failed to refresh - store error message
+                    print("⚠️ Failed to refresh feed: \(result.feedId)")
+                    if let feed = feeds.first(where: { $0.id == result.feedId }),
+                       let error = result.error {
+                        feed.lastRefreshError = error.localizedDescription
+                    }
                 }
-
-                lastRefreshTime = Date()
-                print("✅ Feed refresh completed. Added new articles.")
             }
-        } catch {
-            print("❌ Feed refresh failed: \(error.localizedDescription)")
+
+            lastRefreshTime = Date()
+            let successCount = results.filter { $0.success }.count
+            print("✅ Feed refresh completed: \(successCount)/\(results.count) feeds updated successfully.")
         }
     }
 

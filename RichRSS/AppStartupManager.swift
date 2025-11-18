@@ -41,11 +41,11 @@ final class AppStartupManager {
 
             // Step 2: Refresh all feeds
             await updateStatus("Refreshing feeds...")
-            let refreshResults = try await FeedFetcher.shared.refreshAllFeeds(feeds: feeds)
+            let refreshResults = await FeedFetcher.shared.refreshAllFeeds(feeds: feeds)
 
             // Step 3: Insert articles in main thread
             await updateStatus("Updating articles...")
-            try await insertNewArticles(from: refreshResults)
+            try await insertNewArticles(from: refreshResults, feeds: feeds)
 
             await finishLoading()
 
@@ -70,8 +70,8 @@ final class AppStartupManager {
         }
     }
 
-    /// Inserts new articles from refresh results
-    private func insertNewArticles(from refreshResults: [String: [Article]]) async throws {
+    /// Inserts new articles from refresh results and updates feed timestamps
+    private func insertNewArticles(from refreshResults: [FeedRefreshResult], feeds: [Feed]) async throws {
         await MainActor.run {
             do {
                 let context = ModelContext(self.modelContainer)
@@ -82,24 +82,44 @@ final class AppStartupManager {
                 let existingGuids = Set(existingArticles.compactMap { $0.guid })
                 let existingTitles = Set(existingArticles.map { $0.title })
 
-                // Insert new articles
-                for (_, articles) in refreshResults {
-                    for newArticle in articles {
-                        // Check by guid first, then by title
-                        let isDuplicate: Bool
-                        if let guid = newArticle.guid {
-                            isDuplicate = existingGuids.contains(guid)
-                        } else {
-                            isDuplicate = existingTitles.contains(newArticle.title)
+                // Process refresh results for all feeds
+                var successCount = 0
+                for result in refreshResults {
+                    if result.success {
+                        // Successfully refreshed - add articles and update timestamp
+                        successCount += 1
+
+                        for newArticle in result.articles {
+                            // Check by guid first, then by title
+                            let isDuplicate: Bool
+                            if let guid = newArticle.guid {
+                                isDuplicate = existingGuids.contains(guid)
+                            } else {
+                                isDuplicate = existingTitles.contains(newArticle.title)
+                            }
+
+                            if !isDuplicate {
+                                context.insert(newArticle)
+                            }
                         }
 
-                        if !isDuplicate {
-                            context.insert(newArticle)
+                        // Update lastUpdated timestamp and clear any previous errors
+                        if let feed = feeds.first(where: { $0.id == result.feedId }) {
+                            feed.lastUpdated = result.timestamp
+                            feed.lastRefreshError = nil
+                        }
+                    } else {
+                        // Failed to refresh - store error message
+                        print("⚠️ Failed to refresh feed during startup: \(result.feedId)")
+                        if let feed = feeds.first(where: { $0.id == result.feedId }),
+                           let error = result.error {
+                            feed.lastRefreshError = error.localizedDescription
                         }
                     }
                 }
 
                 try context.save()
+                print("✅ Startup refresh completed: \(successCount)/\(refreshResults.count) feeds updated successfully.")
             } catch {
                 print("⚠️ Failed to insert articles: \(error.localizedDescription)")
             }
