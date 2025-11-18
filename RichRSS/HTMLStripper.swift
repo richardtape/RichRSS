@@ -84,7 +84,7 @@ struct HTMLStripper {
         return excerpt + (hasMore ? "…" : "")
     }
 
-    private static func decodeHTMLEntities(_ html: String) -> String {
+    static func decodeHTMLEntities(_ html: String) -> String {
         var result = html
 
         let entities: [String: String] = [

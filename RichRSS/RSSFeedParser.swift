@@ -59,7 +59,8 @@ class RSSFeedParser: NSObject, XMLParserDelegate {
 
         if parser.parse() {
             // Use extracted title, fall back to generic name if empty
-            let finalTitle = feedTitle.isEmpty ? "Untitled Feed" : feedTitle
+            let decodedTitle = HTMLStripper.decodeHTMLEntities(feedTitle)
+            let finalTitle = decodedTitle.isEmpty ? "Untitled Feed" : decodedTitle
             return (title: finalTitle, articles: articles)
         } else if let error = parseError {
             throw error
@@ -173,7 +174,8 @@ class RSSFeedParser: NSObject, XMLParserDelegate {
 
     private func createArticle(from dict: [String: String]) -> Article {
         let id = dict["guid"] ?? dict["link"] ?? UUID().uuidString
-        let title = dict["title"] ?? "Untitled"
+        let rawTitle = dict["title"] ?? "Untitled"
+        let title = HTMLStripper.decodeHTMLEntities(rawTitle)
         let summary = dict["description"] ?? ""
         let content = dict["content"]
         let link = dict["link"]
