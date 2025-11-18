@@ -7,6 +7,15 @@
 
 import Foundation
 
+/// Result of refreshing a single feed
+struct FeedRefreshResult {
+    let feedId: String
+    let articles: [Article]
+    let success: Bool
+    let error: Error?
+    let timestamp: Date
+}
+
 actor FeedFetcher {
     static let shared = FeedFetcher()
 
@@ -40,22 +49,56 @@ actor FeedFetcher {
         }
     }
 
-    /// Fetches all feeds and returns a dictionary of [feedId: articles]
-    func refreshAllFeeds(feeds: [Feed]) async throws -> [String: [Article]] {
-        var results: [String: [Article]] = [:]
+    /// Refreshes a single feed and returns the result with success/failure info
+    func refreshFeed(_ feed: Feed) async -> FeedRefreshResult {
+        do {
+            let (articles, _) = try await fetchFeed(from: feed.feedUrl, feedTitle: feed.title)
+            return FeedRefreshResult(
+                feedId: feed.id,
+                articles: articles,
+                success: true,
+                error: nil,
+                timestamp: Date()
+            )
+        } catch {
+            print("⚠️ Failed to refresh feed '\(feed.title)': \(error.localizedDescription)")
+            return FeedRefreshResult(
+                feedId: feed.id,
+                articles: [],
+                success: false,
+                error: error,
+                timestamp: Date()
+            )
+        }
+    }
+
+    /// Refreshes all feeds and returns results with per-feed success/failure info
+    /// - Parameter feeds: Array of feeds to refresh
+    /// - Returns: Array of FeedRefreshResult with success status and timestamp for each feed
+    func refreshAllFeeds(feeds: [Feed]) async -> [FeedRefreshResult] {
+        var results: [FeedRefreshResult] = []
 
         for feed in feeds {
-            do {
-                let (articles, _) = try await fetchFeed(from: feed.feedUrl, feedTitle: feed.title)
-                results[feed.id] = articles
-            } catch {
-                print("⚠️ Failed to refresh feed '\(feed.title)': \(error.localizedDescription)")
-                // Continue refreshing other feeds even if one fails
-                results[feed.id] = []
-            }
+            let result = await refreshFeed(feed)
+            results.append(result)
         }
 
         return results
+    }
+
+    /// Legacy method for backwards compatibility - converts new result format to old dictionary format
+    /// - Parameter feeds: Array of feeds to refresh
+    /// - Returns: Dictionary mapping feed IDs to articles (empty array on failure)
+    @available(*, deprecated, message: "Use refreshAllFeeds(feeds:) -> [FeedRefreshResult] instead")
+    func refreshAllFeedsLegacy(feeds: [Feed]) async -> [String: [Article]] {
+        let results = await refreshAllFeeds(feeds: feeds)
+        var dictionary: [String: [Article]] = [:]
+
+        for result in results {
+            dictionary[result.feedId] = result.articles
+        }
+
+        return dictionary
     }
 
     /// Fetches a feed and extracts its title from the feed's metadata

@@ -18,6 +18,10 @@ final class Feed {
     var lastUpdated: Date?
     var faviconUrl: String?
     var isFavorite: Bool = false
+    var lastRefreshError: String?  // Persisted error message from last refresh attempt
+
+    // Transient state (not persisted to database)
+    @Transient var isRefreshing: Bool = false
 
     init(
         id: String,
@@ -27,7 +31,8 @@ final class Feed {
         feedSummary: String? = nil,
         lastUpdated: Date? = nil,
         faviconUrl: String? = nil,
-        isFavorite: Bool = false
+        isFavorite: Bool = false,
+        lastRefreshError: String? = nil
     ) {
         self.id = id
         self.title = title
@@ -37,5 +42,6 @@ final class Feed {
         self.lastUpdated = lastUpdated
         self.faviconUrl = faviconUrl
         self.isFavorite = isFavorite
+        self.lastRefreshError = lastRefreshError
     }
 }
