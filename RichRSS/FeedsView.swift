@@ -75,10 +75,9 @@ struct FeedsView: View {
                             .foregroundColor(.blue)
                             .opacity(0.3)
                         Text("No Feeds Yet")
-                            .font(.title2)
-                            .fontWeight(.bold)
+                            .appFont(.title2, weight: .bold)
                         Text("Add an RSS feed to get started")
-                            .font(.subheadline)
+                            .appFont(.subheadline)
                             .foregroundColor(.secondary)
                         Spacer()
                     }
@@ -114,10 +113,10 @@ struct FeedsView: View {
                                     // Feed Info
                                     VStack(alignment: .leading, spacing: 6) {
                                         Text(feed.title)
-                                            .font(.headline)
+                                            .appFont(.headline)
                                             .foregroundColor(.primary)
                                         Text(feed.feedUrl)
-                                            .font(.caption)
+                                            .appFont(.caption)
                                             .foregroundColor(.secondary)
                                             .lineLimit(1)
 
@@ -126,24 +125,23 @@ struct FeedsView: View {
                                         HStack(spacing: 6) {
                                             if let lastUpdated = feed.lastUpdated {
                                                 Text("Last updated: \(lastUpdated.relativeTimeString())")
-                                                    .font(.caption2)
+                                                    .appFont(.caption2)
                                                     .foregroundColor(.secondary)
                                             } else {
                                                 Text("Never updated")
-                                                    .font(.caption2)
+                                                    .appFont(.caption2)
                                                     .foregroundColor(.secondary)
                                             }
 
                                             if count > 0 {
                                                 Text("•")
-                                                    .font(.caption2)
+                                                    .appFont(.caption2)
                                                     .foregroundColor(.secondary)
 
                                                 HStack(spacing: 2) {
                                                     Text("\(count) unread")
                                                 }
-                                                .font(.caption2)
-                                                .fontWeight(.semibold)
+                                                .appFont(.caption2, weight: .semibold)
                                                 .foregroundColor(currentTheme.pillTextColor)
                                                 .padding(.horizontal, 6)
                                                 .padding(.vertical, 2)

@@ -40,12 +40,12 @@ struct PullToRefreshHeader: View {
                         .tint(.blue)
                         .scaleEffect(0.8)
                     Text("Refreshing...")
-                        .font(.caption2)
+                        .appFont(.caption2)
                         .foregroundColor(.secondary)
                 }
             } else {
                 Text(pullDistance > threshold ? "Release to refresh" : "Pull to refresh")
-                    .font(.caption2)
+                    .appFont(.caption2)
                     .foregroundColor(.secondary)
                     .opacity(pullDistance > 10 ? 1 : 0)
             }

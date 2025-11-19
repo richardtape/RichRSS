@@ -53,7 +53,7 @@ struct SettingsView: View {
                         Text("Text Size")
                     } footer: {
                         Text("Adjusts text size in RichRSS. This combines with your iOS system text size setting (Settings → Display & Brightness → Text Size).")
-                            .font(.caption)
+                            .appFont(.caption)
                     }
 
                     Section {
@@ -66,9 +66,9 @@ struct SettingsView: View {
                         )) {
                             VStack(alignment: .leading, spacing: 4) {
                                 Text("Background Refresh")
-                                    .font(.body)
+                                    .appFont(.body)
                                 Text("Automatically refresh feeds in the background")
-                                    .font(.caption)
+                                    .appFont(.caption)
                                     .foregroundColor(.secondary)
                             }
                         }
@@ -82,9 +82,9 @@ struct SettingsView: View {
                             )) {
                                 VStack(alignment: .leading, spacing: 4) {
                                     Text("Wi-Fi Only")
-                                        .font(.body)
+                                        .appFont(.body)
                                     Text("Refresh feeds only when connected to Wi-Fi")
-                                        .font(.caption)
+                                        .appFont(.caption)
                                         .foregroundColor(.secondary)
                                 }
                             }
@@ -93,10 +93,10 @@ struct SettingsView: View {
                             if let lastRefresh = settings.lastBackgroundRefreshDate {
                                 HStack {
                                     Text("Last Background Refresh")
-                                        .font(.caption)
+                                        .appFont(.caption)
                                     Spacer()
                                     Text(lastRefresh.relativeTimeString())
-                                        .font(.caption)
+                                        .appFont(.caption)
                                         .foregroundColor(.secondary)
                                 }
                             }
@@ -105,7 +105,7 @@ struct SettingsView: View {
                         Text("Feed Refresh")
                     } footer: {
                         Text("Background refresh requires iOS permission and may not occur if Low Power Mode is enabled or battery is low. iOS determines the optimal refresh schedule based on your usage patterns.")
-                            .font(.caption)
+                            .appFont(.caption)
                     }
 
                     Section("About") {
