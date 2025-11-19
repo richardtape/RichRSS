@@ -48,16 +48,19 @@ struct ArticleWebView: UIViewRepresentable {
     func updateUIView(_ container: WebViewContainer, context: Context) {
         let themeStyle = theme.style.name
         let sizeCategoryId = DynamicTypeHelper.getCurrentSizeCategoryIdentifier()
+        let currentScale = dynamicTypeScale
 
-        // Reload HTML if the article changed OR the theme changed OR Dynamic Type size changed
+        // Reload HTML if the article changed OR the theme changed OR Dynamic Type size changed OR scale factor changed
         if container.currentArticleId != article.uniqueId
             || container.currentThemeStyle != themeStyle
-            || container.currentSizeCategoryId != sizeCategoryId {
+            || container.currentSizeCategoryId != sizeCategoryId
+            || abs((container.currentScaleFactor ?? 0) - currentScale) > 0.001 {
             // Try to get cached HTML, but only if the theme AND size category match
             // (cache includes theme-specific CSS and Dynamic Type scaling, so mismatches require regeneration)
             let htmlContent: String
             if container.currentThemeStyle == themeStyle,
                container.currentSizeCategoryId == sizeCategoryId,
+               abs((container.currentScaleFactor ?? 0) - currentScale) < 0.001,
                let cachedHTML = ArticleHTMLCache.shared.getCachedHTML(for: article, sizeCategory: sizeCategoryId) {
                 htmlContent = cachedHTML
             } else {
@@ -72,6 +75,7 @@ struct ArticleWebView: UIViewRepresentable {
             container.currentArticleId = article.uniqueId
             container.currentThemeStyle = themeStyle
             container.currentSizeCategoryId = sizeCategoryId
+            container.currentScaleFactor = currentScale
         }
 
         // Always update the callbacks so they have the latest closures
@@ -193,6 +197,7 @@ class WebViewContainer: UIView {
     var currentArticleId: String?  // Track which article is currently loaded
     var currentThemeStyle: String?  // Track which theme is currently loaded
     var currentSizeCategoryId: String?  // Track which Dynamic Type size is currently loaded
+    var currentScaleFactor: CGFloat?  // Track the actual scale factor used for rendering
     private var isHorizontalPan = false
     private var initialLocation: CGPoint = .zero
 
