@@ -724,8 +724,9 @@ struct ArticleDetailView: View {
                                     let nextArticle = allArticles[currentIndex + 1]
                                     incomingArticle = nextArticle
                                     // Pre-cache the HTML so images load faster
+                                    let currentSizeCategory = DynamicTypeHelper.getCurrentSizeCategoryIdentifier()
                                     DispatchQueue.global(qos: .userInitiated).async {
-                                        _ = ArticleHTMLCache.shared.getCachedHTML(for: nextArticle)
+                                        _ = ArticleHTMLCache.shared.getCachedHTML(for: nextArticle, sizeCategory: currentSizeCategory)
                                     }
                                 }
                             } else if translation > 0 {
@@ -740,8 +741,9 @@ struct ArticleDetailView: View {
                                     let prevArticle = allArticles[currentIndex - 1]
                                     incomingArticle = prevArticle
                                     // Pre-cache the HTML so images load faster
+                                    let currentSizeCategory = DynamicTypeHelper.getCurrentSizeCategoryIdentifier()
                                     DispatchQueue.global(qos: .userInitiated).async {
-                                        _ = ArticleHTMLCache.shared.getCachedHTML(for: prevArticle)
+                                        _ = ArticleHTMLCache.shared.getCachedHTML(for: prevArticle, sizeCategory: currentSizeCategory)
                                     }
                                 }
                             }
