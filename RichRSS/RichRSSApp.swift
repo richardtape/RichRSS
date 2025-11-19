@@ -37,6 +37,7 @@ struct RichRSSApp: App {
         WindowGroup {
             ContentView()
                 .environment(startupManager ?? AppStartupManager(modelContainer: sharedModelContainer))
+                .trackDynamicTypeScale()  // Enable Dynamic Type tracking throughout the app
                 .onAppear {
                     if startupManager == nil {
                         startupManager = AppStartupManager(modelContainer: sharedModelContainer)

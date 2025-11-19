@@ -28,7 +28,8 @@ struct LoadingView: View {
                         .foregroundColor(theme.accentColor)
 
                     Text("RichRSS")
-                        .font(.system(size: 28, weight: .bold))
+                        .font(.title)
+                        .fontWeight(.bold)
                         .foregroundColor(theme.textColor)
                 }
 

@@ -15,6 +15,8 @@ struct ArticleWebView: UIViewRepresentable {
     var onPanChanged: ((CGFloat) -> Void)?
     var onGestureEnded: ((CGFloat) -> Void)?
 
+    @Environment(\.dynamicTypeScale) private var dynamicTypeScale
+
     func makeUIView(context: Context) -> WebViewContainer {
         let config = WKWebViewConfiguration()
         config.defaultWebpagePreferences.preferredContentMode = .mobile
@@ -45,19 +47,23 @@ struct ArticleWebView: UIViewRepresentable {
 
     func updateUIView(_ container: WebViewContainer, context: Context) {
         let themeStyle = theme.style.name
+        let sizeCategoryId = DynamicTypeHelper.getCurrentSizeCategoryIdentifier()
 
-        // Reload HTML if the article changed OR the theme changed
-        if container.currentArticleId != article.uniqueId || container.currentThemeStyle != themeStyle {
-            // Try to get cached HTML, but only if the theme matches
-            // (cache includes theme-specific CSS, so theme mismatch requires regeneration)
+        // Reload HTML if the article changed OR the theme changed OR Dynamic Type size changed
+        if container.currentArticleId != article.uniqueId
+            || container.currentThemeStyle != themeStyle
+            || container.currentSizeCategoryId != sizeCategoryId {
+            // Try to get cached HTML, but only if the theme AND size category match
+            // (cache includes theme-specific CSS and Dynamic Type scaling, so mismatches require regeneration)
             let htmlContent: String
             if container.currentThemeStyle == themeStyle,
-               let cachedHTML = ArticleHTMLCache.shared.getCachedHTML(for: article) {
+               container.currentSizeCategoryId == sizeCategoryId,
+               let cachedHTML = ArticleHTMLCache.shared.getCachedHTML(for: article, sizeCategory: sizeCategoryId) {
                 htmlContent = cachedHTML
             } else {
-                // Generate and cache the HTML (with current theme CSS)
+                // Generate and cache the HTML (with current theme CSS and Dynamic Type scaling)
                 htmlContent = generateHTMLContent()
-                ArticleHTMLCache.shared.cacheHTML(htmlContent, for: article)
+                ArticleHTMLCache.shared.cacheHTML(htmlContent, for: article, sizeCategory: sizeCategoryId)
             }
 
             // Load with a base URL to help YouTube embeds work properly
@@ -65,6 +71,7 @@ struct ArticleWebView: UIViewRepresentable {
             container.webView.loadHTMLString(htmlContent, baseURL: baseURL)
             container.currentArticleId = article.uniqueId
             container.currentThemeStyle = themeStyle
+            container.currentSizeCategoryId = sizeCategoryId
         }
 
         // Always update the callbacks so they have the latest closures
@@ -132,8 +139,10 @@ struct ArticleWebView: UIViewRepresentable {
         // Load CSS files from bundle
         // 1. Components: Base structure + all HTML styling + default variables
         // 2. Theme variables: Color/typography/spacing overrides for specific theme
+        // 3. Dynamic Type scaling: User's iOS text size preference applied to font sizes
         let componentsCSS = loadCSS(filename: "components") ?? ""
         let themeVariablesCSS = loadCSS(filename: theme.variablesFileName) ?? ""
+        let dynamicTypeCSS = DynamicTypeHelper.generateFontScaleCSS(scaleFactor: dynamicTypeScale)
 
         // Build HTML document with our CSS
         let html = """
@@ -146,6 +155,7 @@ struct ArticleWebView: UIViewRepresentable {
             <style>
             \(componentsCSS)
             \(themeVariablesCSS)
+            \(dynamicTypeCSS)
             </style>
         </head>
         <body>
@@ -182,6 +192,7 @@ class WebViewContainer: UIView {
     var onGestureEnded: ((CGFloat) -> Void)?  // Pass final translation value
     var currentArticleId: String?  // Track which article is currently loaded
     var currentThemeStyle: String?  // Track which theme is currently loaded
+    var currentSizeCategoryId: String?  // Track which Dynamic Type size is currently loaded
     private var isHorizontalPan = false
     private var initialLocation: CGPoint = .zero
 

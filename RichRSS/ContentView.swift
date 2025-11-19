@@ -142,7 +142,8 @@ struct ArticlesListViewWithSelection: View {
                         .foregroundColor(.blue)
                         .opacity(0.3)
                     Text("No Articles Yet")
-                        .font(.system(size: 24, weight: .bold, design: .default))
+                        .font(.title2)
+                        .fontWeight(.bold)
                     Text("Add an RSS feed to get started")
                         .font(.subheadline)
                         .foregroundColor(.secondary)
@@ -159,7 +160,8 @@ struct ArticlesListViewWithSelection: View {
                         .foregroundColor(.blue)
                         .opacity(0.3)
                     Text("No Articles")
-                        .font(.system(size: 24, weight: .bold, design: .default))
+                        .font(.title2)
+                        .fontWeight(.bold)
                     Text("No articles found for \(selectedFeedForFilter?.title ?? "this feed")")
                         .font(.subheadline)
                         .foregroundColor(.secondary)
@@ -189,7 +191,8 @@ struct ArticlesListViewWithSelection: View {
                         .foregroundColor(.green)
                         .opacity(0.3)
                     Text("All Caught Up!")
-                        .font(.system(size: 24, weight: .bold, design: .default))
+                        .font(.title2)
+                        .fontWeight(.bold)
                     Text("You've read all your articles")
                         .font(.subheadline)
                         .foregroundColor(.secondary)
@@ -218,7 +221,8 @@ struct ArticlesListViewWithSelection: View {
                         .foregroundColor(.blue)
                         .opacity(0.3)
                     Text("No Saved Articles")
-                        .font(.system(size: 24, weight: .bold, design: .default))
+                        .font(.title2)
+                        .fontWeight(.bold)
                     Text("Swipe right on any article or tap the bookmark icon to save it for later")
                         .font(.subheadline)
                         .foregroundColor(.secondary)
@@ -253,7 +257,8 @@ struct ArticlesListViewWithSelection: View {
                                             Image(systemName: "xmark.circle.fill")
                                             Text("Clear")
                                         }
-                                        .font(.system(size: 14, weight: .medium))
+                                        .font(.caption)
+                                        .fontWeight(.medium)
                                         .foregroundColor(.blue)
                                     }
                                 }
@@ -530,9 +535,10 @@ struct ArticleHeaderView: View {
             Button(action: onBack) {
                 HStack(spacing: 4) {
                     Image(systemName: "chevron.left")
-                        .font(.system(size: 16, weight: .semibold))
                     Text("Back")
                 }
+                .font(.body)
+                .fontWeight(.semibold)
                 .foregroundColor(.blue)
             }
 
@@ -618,9 +624,10 @@ struct ArticleDetailView: View {
                     Button(action: { showingArticle = false }) {
                         HStack(spacing: 4) {
                             Image(systemName: "chevron.left")
-                                .font(.system(size: 16, weight: .semibold))
                             Text("Back")
                         }
+                        .font(.body)
+                        .fontWeight(.semibold)
                         .foregroundColor(.blue)
                     }
 
@@ -892,7 +899,8 @@ struct EndOfFeedView: View {
 
             VStack(spacing: 12) {
                 Text("You've Reached the End")
-                    .font(.system(size: 24, weight: .bold, design: .default))
+                    .font(.title2)
+                    .fontWeight(.bold)
 
                 Text("You've read all the articles in this feed.")
                     .font(.subheadline)
@@ -955,7 +963,8 @@ struct BeginningOfFeedView: View {
 
             VStack(spacing: 12) {
                 Text("Beginning of Feed")
-                    .font(.system(size: 24, weight: .bold, design: .default))
+                    .font(.title2)
+                    .fontWeight(.bold)
 
                 Text("You've scrolled to the earliest articles in this feed.")
                     .font(.subheadline)

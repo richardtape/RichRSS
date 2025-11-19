@@ -67,33 +67,42 @@ extension Theme {
     }
 
     // MARK: - Typography (Font Sizes in points)
+    // Note: These are provided for backward compatibility, but views should prefer
+    // using semantic font styles (.body, .headline, etc.) for proper Dynamic Type support
 
     var fontSizeTitle: CGFloat {
-        extractFontSize(variable: "--font-size-title") ?? 28
+        let baseSize = extractFontSize(variable: "--font-size-title") ?? 28
+        return baseSize * DynamicTypeHelper.getCurrentScaleFactor()
     }
 
     var fontSizeTitle2: CGFloat {
-        extractFontSize(variable: "--font-size-title2") ?? 22
+        let baseSize = extractFontSize(variable: "--font-size-title2") ?? 22
+        return baseSize * DynamicTypeHelper.getCurrentScaleFactor()
     }
 
     var fontSizeHeadline: CGFloat {
-        extractFontSize(variable: "--font-size-headline") ?? 18
+        let baseSize = extractFontSize(variable: "--font-size-headline") ?? 18
+        return baseSize * DynamicTypeHelper.getCurrentScaleFactor()
     }
 
     var fontSizeBody: CGFloat {
-        extractFontSize(variable: "--font-size-body") ?? 16
+        let baseSize = extractFontSize(variable: "--font-size-body") ?? 16
+        return baseSize * DynamicTypeHelper.getCurrentScaleFactor()
     }
 
     var fontSizeSubheadline: CGFloat {
-        extractFontSize(variable: "--font-size-subheadline") ?? 15
+        let baseSize = extractFontSize(variable: "--font-size-subheadline") ?? 15
+        return baseSize * DynamicTypeHelper.getCurrentScaleFactor()
     }
 
     var fontSizeCaption: CGFloat {
-        extractFontSize(variable: "--font-size-caption") ?? 14
+        let baseSize = extractFontSize(variable: "--font-size-caption") ?? 14
+        return baseSize * DynamicTypeHelper.getCurrentScaleFactor()
     }
 
     var fontSizeCaption2: CGFloat {
-        extractFontSize(variable: "--font-size-caption2") ?? 13
+        let baseSize = extractFontSize(variable: "--font-size-caption2") ?? 13
+        return baseSize * DynamicTypeHelper.getCurrentScaleFactor()
     }
 
     // MARK: - Spacing (in points)

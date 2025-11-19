@@ -21,8 +21,8 @@ class ArticleHTMLCache {
         return cacheDir
     }()
 
-    func getCachedHTML(for article: Article) -> String? {
-        let filename = getCacheFilename(for: article)
+    func getCachedHTML(for article: Article, sizeCategory: String) -> String? {
+        let filename = getCacheFilename(for: article, sizeCategory: sizeCategory)
         let filePath = cacheDirectory.appendingPathComponent(filename)
 
         if fileManager.fileExists(atPath: filePath.path) {
@@ -37,8 +37,8 @@ class ArticleHTMLCache {
         return nil
     }
 
-    func cacheHTML(_ html: String, for article: Article) {
-        let filename = getCacheFilename(for: article)
+    func cacheHTML(_ html: String, for article: Article, sizeCategory: String) {
+        let filename = getCacheFilename(for: article, sizeCategory: sizeCategory)
         let filePath = cacheDirectory.appendingPathComponent(filename)
 
         do {
@@ -61,8 +61,10 @@ class ArticleHTMLCache {
         }
     }
 
-    private func getCacheFilename(for article: Article) -> String {
-        // Use uniqueId as the cache key
-        return "\(article.uniqueId).html"
+    private func getCacheFilename(for article: Article, sizeCategory: String) -> String {
+        // Use uniqueId + size category as the cache key
+        // This ensures different Dynamic Type sizes have separate cache entries
+        let sanitizedCategory = sizeCategory.replacingOccurrences(of: ".", with: "-")
+        return "\(article.uniqueId)_\(sanitizedCategory).html"
     }
 }
