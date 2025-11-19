@@ -12,6 +12,7 @@ struct SettingsView: View {
     @Environment(\.modelContext) private var modelContext
     @Query private var settingsObjects: [AppSettings]
     @AppStorage("selectedThemeStyle") private var selectedThemeStyle: String = "system"
+    @AppStorage("inAppFontSizeMultiplier") private var inAppFontSizeMultiplier: Double = 1.0
     @State private var showResetConfirmation = false
 
     // Get or create settings
@@ -39,6 +40,20 @@ struct SettingsView: View {
                             Text("Dark").tag("dark")
                             Text("Sepia").tag("sepia")
                         }
+                    }
+
+                    Section {
+                        Picker("App Text Size", selection: $inAppFontSizeMultiplier) {
+                            Text("Smaller").tag(0.85)
+                            Text("Default").tag(1.0)
+                            Text("Larger").tag(1.15)
+                            Text("Largest").tag(1.3)
+                        }
+                    } header: {
+                        Text("Text Size")
+                    } footer: {
+                        Text("Adjusts text size in RichRSS. This combines with your iOS system text size setting (Settings → Display & Brightness → Text Size).")
+                            .font(.caption)
                     }
 
                     Section {
@@ -150,6 +165,9 @@ struct SettingsView: View {
 
             // Reset theme to system default
             selectedThemeStyle = "system"
+
+            // Reset text size to default
+            inAppFontSizeMultiplier = 1.0
 
             // Clear HTML cache
             ArticleHTMLCache.shared.clearCache()
