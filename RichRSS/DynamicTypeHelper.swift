@@ -13,10 +13,24 @@ import UIKit
 class DynamicTypeHelper {
 
     /// Get the current Dynamic Type scale factor based on user's iOS text size preference
-    /// - Returns: Scale factor from 0.82 (smallest) to 3.12 (largest accessibility size)
-    static func getCurrentScaleFactor() -> CGFloat {
+    /// Combined with optional in-app multiplier
+    /// - Parameter inAppMultiplier: Optional app-specific multiplier (default: 1.0). Use nil to read from AppStorage.
+    /// - Returns: Scale factor from 0.82 (smallest) to 3.12+ (largest accessibility size) × in-app multiplier
+    static func getCurrentScaleFactor(inAppMultiplier: CGFloat? = nil) -> CGFloat {
         let contentSize = UIApplication.shared.preferredContentSizeCategory
-        return scaleFactor(for: contentSize)
+        let systemScale = scaleFactor(for: contentSize)
+
+        // Apply in-app multiplier if provided, otherwise read from storage
+        let multiplier = inAppMultiplier ?? getInAppFontSizeMultiplier()
+        return systemScale * multiplier
+    }
+
+    /// Get the in-app font size multiplier from UserDefaults
+    /// - Returns: Multiplier value (0.85, 1.0, 1.15, or 1.3)
+    private static func getInAppFontSizeMultiplier() -> CGFloat {
+        return UserDefaults.standard.double(forKey: "inAppFontSizeMultiplier") == 0
+            ? 1.0 // Default if not set
+            : UserDefaults.standard.double(forKey: "inAppFontSizeMultiplier")
     }
 
     /// Convert a UIContentSizeCategory to a numeric scale factor
@@ -87,6 +101,7 @@ extension EnvironmentValues {
 /// View modifier that observes Dynamic Type changes and updates the environment
 struct DynamicTypeScaleModifier: ViewModifier {
     @State private var scaleFactor: CGFloat = DynamicTypeHelper.getCurrentScaleFactor()
+    @AppStorage("inAppFontSizeMultiplier") private var inAppFontSizeMultiplier: Double = 1.0
 
     func body(content: Content) -> some View {
         content
@@ -94,6 +109,15 @@ struct DynamicTypeScaleModifier: ViewModifier {
             .onReceive(NotificationCenter.default.publisher(
                 for: UIContentSizeCategory.didChangeNotification
             )) { _ in
+                // System Dynamic Type changed
+                scaleFactor = DynamicTypeHelper.getCurrentScaleFactor()
+            }
+            .onChange(of: inAppFontSizeMultiplier) { _, _ in
+                // In-app multiplier changed
+                scaleFactor = DynamicTypeHelper.getCurrentScaleFactor()
+            }
+            .onAppear {
+                // Ensure we have the latest scale on first appearance
                 scaleFactor = DynamicTypeHelper.getCurrentScaleFactor()
             }
     }
