@@ -27,7 +27,7 @@ class DynamicTypeHelper {
 
     /// Get the in-app font size multiplier from UserDefaults
     /// - Returns: Multiplier value (0.85, 1.0, 1.15, or 1.3)
-    private static func getInAppFontSizeMultiplier() -> CGFloat {
+    static func getInAppFontSizeMultiplier() -> CGFloat {
         return UserDefaults.standard.double(forKey: "inAppFontSizeMultiplier") == 0
             ? 1.0 // Default if not set
             : UserDefaults.standard.double(forKey: "inAppFontSizeMultiplier")
@@ -78,11 +78,14 @@ class DynamicTypeHelper {
         """
     }
 
-    /// Get a unique identifier for the current content size category
+    /// Get a unique identifier for the current text size configuration
+    /// Includes both iOS system Dynamic Type AND in-app multiplier
     /// Useful for cache invalidation when text size changes
-    /// - Returns: String identifier for the current size category
+    /// - Returns: String identifier combining system size category and in-app multiplier
     static func getCurrentSizeCategoryIdentifier() -> String {
-        return UIApplication.shared.preferredContentSizeCategory.rawValue
+        let systemCategory = UIApplication.shared.preferredContentSizeCategory.rawValue
+        let inAppMultiplier = getInAppFontSizeMultiplier()
+        return "\(systemCategory)_\(inAppMultiplier)"
     }
 }
 
