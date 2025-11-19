@@ -28,8 +28,7 @@ struct LoadingView: View {
                         .foregroundColor(theme.accentColor)
 
                     Text("RichRSS")
-                        .font(.title)
-                        .fontWeight(.bold)
+                        .appFont(.title, weight: .bold)
                         .foregroundColor(theme.textColor)
                 }
 
@@ -42,7 +41,7 @@ struct LoadingView: View {
                         .scaleEffect(1.2, anchor: .center)
 
                     Text(statusMessage)
-                        .font(.caption)
+                        .appFont(.caption)
                         .foregroundColor(theme.secondaryTextColor)
                         .multilineTextAlignment(.center)
                 }

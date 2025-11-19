@@ -142,10 +142,9 @@ struct ArticlesListViewWithSelection: View {
                         .foregroundColor(.blue)
                         .opacity(0.3)
                     Text("No Articles Yet")
-                        .font(.title2)
-                        .fontWeight(.bold)
+                        .appFont(.title2, weight: .bold)
                     Text("Add an RSS feed to get started")
-                        .font(.subheadline)
+                        .appFont(.subheadline)
                         .foregroundColor(.secondary)
                     Spacer()
                 }
@@ -160,10 +159,9 @@ struct ArticlesListViewWithSelection: View {
                         .foregroundColor(.blue)
                         .opacity(0.3)
                     Text("No Articles")
-                        .font(.title2)
-                        .fontWeight(.bold)
+                        .appFont(.title2, weight: .bold)
                     Text("No articles found for \(selectedFeedForFilter?.title ?? "this feed")")
-                        .font(.subheadline)
+                        .appFont(.subheadline)
                         .foregroundColor(.secondary)
                         .multilineTextAlignment(.center)
                         .padding(.horizontal, 40)
@@ -191,10 +189,9 @@ struct ArticlesListViewWithSelection: View {
                         .foregroundColor(.green)
                         .opacity(0.3)
                     Text("All Caught Up!")
-                        .font(.title2)
-                        .fontWeight(.bold)
+                        .appFont(.title2, weight: .bold)
                     Text("You've read all your articles")
-                        .font(.subheadline)
+                        .appFont(.subheadline)
                         .foregroundColor(.secondary)
 
                     Button(action: { filterMode = .showAll }) {
@@ -221,10 +218,9 @@ struct ArticlesListViewWithSelection: View {
                         .foregroundColor(.blue)
                         .opacity(0.3)
                     Text("No Saved Articles")
-                        .font(.title2)
-                        .fontWeight(.bold)
+                        .appFont(.title2, weight: .bold)
                     Text("Swipe right on any article or tap the bookmark icon to save it for later")
-                        .font(.subheadline)
+                        .appFont(.subheadline)
                         .foregroundColor(.secondary)
                         .multilineTextAlignment(.center)
                         .padding(.horizontal, 40)
@@ -257,8 +253,7 @@ struct ArticlesListViewWithSelection: View {
                                             Image(systemName: "xmark.circle.fill")
                                             Text("Clear")
                                         }
-                                        .font(.caption)
-                                        .fontWeight(.medium)
+                                        .appFont(.caption, weight: .medium)
                                         .foregroundColor(.blue)
                                     }
                                 }
@@ -444,8 +439,7 @@ struct ArticleListItemView: View {
             VStack(alignment: .leading, spacing: 8) {
             // Title
             Text(article.title)
-                .font(.system(.headline, design: .default))
-                .fontWeight(.semibold)
+                .appFont(.headline, weight: .semibold)
                 .lineLimit(3)
                 .tracking(-0.3)
                 .foregroundColor(.primary)
@@ -453,7 +447,7 @@ struct ArticleListItemView: View {
             // Excerpt/Summary (max 3 lines)
             if !excerpt.isEmpty {
                 Text(excerpt)
-                    .font(.subheadline)
+                    .appFont(.subheadline)
                     .foregroundColor(.secondary)
                     .lineLimit(3)
                     .lineSpacing(0.5)
@@ -474,7 +468,7 @@ struct ArticleListItemView: View {
                                 .foregroundColor(.yellow)
                         }
                         Text(article.feedTitle)
-                            .font(.caption2)
+                            .appFont(.caption2)
                             .foregroundColor(.blue)
                             .underline()
                     }
@@ -482,11 +476,11 @@ struct ArticleListItemView: View {
                 .buttonStyle(PlainButtonStyle())
 
                 Text("•")
-                    .font(.caption2)
+                    .appFont(.caption2)
                     .foregroundColor(.secondary)
 
                 Text(article.pubDate.relativeTimeString())
-                    .font(.caption2)
+                    .appFont(.caption2)
                     .foregroundColor(.secondary)
 
                 Spacer()
@@ -537,8 +531,7 @@ struct ArticleHeaderView: View {
                     Image(systemName: "chevron.left")
                     Text("Back")
                 }
-                .font(.body)
-                .fontWeight(.semibold)
+                .appFont(.body, weight: .semibold)
                 .foregroundColor(.blue)
             }
 
@@ -546,17 +539,16 @@ struct ArticleHeaderView: View {
 
             VStack(alignment: .trailing, spacing: 2) {
                 Text(article.feedTitle)
-                    .font(.caption)
-                    .fontWeight(.semibold)
+                    .appFont(.caption, weight: .semibold)
                     .foregroundColor(.blue)
                 HStack(spacing: 8) {
                     if let author = article.author {
                         Text(author)
-                            .font(.caption2)
+                            .appFont(.caption2)
                             .foregroundColor(.gray)
                     }
                     Text(article.pubDate, style: .date)
-                        .font(.caption2)
+                        .appFont(.caption2)
                         .foregroundColor(.gray)
                 }
             }
@@ -626,8 +618,7 @@ struct ArticleDetailView: View {
                             Image(systemName: "chevron.left")
                             Text("Back")
                         }
-                        .font(.body)
-                        .fontWeight(.semibold)
+                        .appFont(.body, weight: .semibold)
                         .foregroundColor(.blue)
                     }
 
@@ -635,12 +626,11 @@ struct ArticleDetailView: View {
 
                     VStack(alignment: .trailing, spacing: 2) {
                         Text("")  // Empty
-                            .font(.caption)
-                            .fontWeight(.semibold)
+                            .appFont(.caption, weight: .semibold)
                             .foregroundColor(.blue)
                         HStack(spacing: 8) {
                             Text("")  // Empty
-                                .font(.caption2)
+                                .appFont(.caption2)
                                 .foregroundColor(.gray)
                         }
                     }
@@ -901,11 +891,10 @@ struct EndOfFeedView: View {
 
             VStack(spacing: 12) {
                 Text("You've Reached the End")
-                    .font(.title2)
-                    .fontWeight(.bold)
+                    .appFont(.title2, weight: .bold)
 
                 Text("You've read all the articles in this feed.")
-                    .font(.subheadline)
+                    .appFont(.subheadline)
                     .foregroundColor(.secondary)
                     .multilineTextAlignment(.center)
             }
@@ -965,11 +954,10 @@ struct BeginningOfFeedView: View {
 
             VStack(spacing: 12) {
                 Text("Beginning of Feed")
-                    .font(.title2)
-                    .fontWeight(.bold)
+                    .appFont(.title2, weight: .bold)
 
                 Text("You've scrolled to the earliest articles in this feed.")
-                    .font(.subheadline)
+                    .appFont(.subheadline)
                     .foregroundColor(.secondary)
                     .multilineTextAlignment(.center)
             }
@@ -986,7 +974,7 @@ struct BeginningOfFeedView: View {
                 }
 
                 Text("or swipe left to return")
-                    .font(.caption)
+                    .appFont(.caption)
                     .foregroundColor(.secondary)
             }
             .padding(.horizontal, 40)
@@ -1066,7 +1054,7 @@ struct AddFeedView: View {
                                 Image(systemName: "exclamationmark.circle.fill")
                                     .foregroundColor(.red)
                                 Text(errorMessage)
-                                    .font(.caption)
+                                    .appFont(.caption)
                                     .foregroundColor(.red)
                                     .lineLimit(4)
                             }
@@ -1082,12 +1070,12 @@ struct AddFeedView: View {
                             ProgressView()
                             if let discoveryStatus = discoveryStatus {
                                 Text(discoveryStatus)
-                                    .font(.caption)
+                                    .appFont(.caption)
                                     .foregroundColor(.gray)
                                     .multilineTextAlignment(.center)
                             } else {
                                 Text("Searching for feed...")
-                                    .font(.caption)
+                                    .appFont(.caption)
                                     .foregroundColor(.gray)
                             }
                         }
@@ -1182,7 +1170,7 @@ struct ConfirmFeedView: View {
             // Feed title input
             VStack(alignment: .leading, spacing: 8) {
                 Text("Feed Title")
-                    .font(.caption)
+                    .appFont(.caption)
                     .foregroundColor(.secondary)
                 TextField("Feed Title", text: $title)
                     .textFieldStyle(.roundedBorder)
@@ -1201,7 +1189,7 @@ struct ConfirmFeedView: View {
                 HStack {
                     Label {
                         Text("URL")
-                            .font(.caption)
+                            .appFont(.caption)
                             .foregroundColor(.secondary)
                     } icon: {
                         Image(systemName: "link")
@@ -1210,7 +1198,7 @@ struct ConfirmFeedView: View {
                 }
 
                 Text(url)
-                    .font(.caption2)
+                    .appFont(.caption2)
                     .foregroundColor(.blue)
                     .lineLimit(2)
                     .truncationMode(.tail)
@@ -1220,7 +1208,7 @@ struct ConfirmFeedView: View {
                 HStack {
                     Label {
                         Text("\(articleCount) articles found")
-                            .font(.caption)
+                            .appFont(.caption)
                             .foregroundColor(.secondary)
                     } icon: {
                         Image(systemName: "newspaper.fill")
@@ -1252,15 +1240,14 @@ struct ConfirmFeedView: View {
             if !articles.isEmpty, let latestArticle = articles.first {
                 VStack(alignment: .leading, spacing: 8) {
                     Text("Latest Article")
-                        .font(.caption)
+                        .appFont(.caption)
                         .foregroundColor(.secondary)
                         .padding(.horizontal)
 
                     VStack(alignment: .leading, spacing: 8) {
                         // Title
                         Text(latestArticle.title)
-                            .font(.system(.headline, design: .default))
-                            .fontWeight(.semibold)
+                            .appFont(.headline, weight: .semibold)
                             .lineLimit(3)
                             .tracking(-0.3)
                             .foregroundColor(.primary)
@@ -1269,7 +1256,7 @@ struct ConfirmFeedView: View {
                         let excerpt = HTMLStripper.stripHTML(latestArticle.summary)
                         if !excerpt.isEmpty {
                             Text(excerpt)
-                                .font(.subheadline)
+                                .appFont(.subheadline)
                                 .foregroundColor(.secondary)
                                 .lineLimit(3)
                                 .lineSpacing(0.5)
@@ -1278,15 +1265,15 @@ struct ConfirmFeedView: View {
                         // Meta row: Feed Title • Relative Time
                         HStack(spacing: 6) {
                             Text(latestArticle.feedTitle)
-                                .font(.caption2)
+                                .appFont(.caption2)
                                 .foregroundColor(.blue)
 
                             Text("•")
-                                .font(.caption2)
+                                .appFont(.caption2)
                                 .foregroundColor(.secondary)
 
                             Text(latestArticle.pubDate.relativeTimeString())
-                                .font(.caption2)
+                                .appFont(.caption2)
                                 .foregroundColor(.secondary)
 
                             Spacer()

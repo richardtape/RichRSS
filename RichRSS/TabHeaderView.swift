@@ -21,8 +21,7 @@ struct TabHeaderView: View {
     var body: some View {
         HStack {
             Text(title)
-                .font(.largeTitle)
-                .fontWeight(.bold)
+                .appFont(.largeTitle, weight: .bold)
 
             Spacer()
 
