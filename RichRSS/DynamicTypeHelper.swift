@@ -132,4 +132,63 @@ extension View {
     func trackDynamicTypeScale() -> some View {
         self.modifier(DynamicTypeScaleModifier())
     }
+
+    /// Apply a font that respects both iOS Dynamic Type AND in-app multiplier
+    /// Use this instead of .font() for proper in-app scaling
+    /// - Parameters:
+    ///   - textStyle: The semantic text style (.body, .headline, etc.)
+    ///   - weight: Optional font weight
+    ///   - design: Optional font design
+    /// - Returns: A view with the properly scaled font
+    func appFont(_ textStyle: Font.TextStyle, weight: Font.Weight? = nil, design: Font.Design = .default) -> some View {
+        self.modifier(AppFontModifier(textStyle: textStyle, weight: weight, design: design))
+    }
+}
+
+/// Modifier that applies a font scaled by both iOS Dynamic Type and in-app multiplier
+private struct AppFontModifier: ViewModifier {
+    let textStyle: Font.TextStyle
+    let weight: Font.Weight?
+    let design: Font.Design
+
+    @AppStorage("inAppFontSizeMultiplier") private var inAppMultiplier: Double = 1.0
+    @Environment(\.sizeCategory) private var sizeCategory
+
+    func body(content: Content) -> some View {
+        content.font(scaledFont)
+    }
+
+    private var scaledFont: Font {
+        // Get the base size for this text style (already scaled for iOS Dynamic Type)
+        let baseSize = UIFont.preferredFont(forTextStyle: textStyle.uiTextStyle).pointSize
+
+        // Apply in-app multiplier
+        let finalSize = baseSize * inAppMultiplier
+
+        // Create font with weight and design
+        var font = Font.system(size: finalSize, design: design)
+        if let weight = weight {
+            font = font.weight(weight)
+        }
+        return font
+    }
+}
+
+private extension Font.TextStyle {
+    var uiTextStyle: UIFont.TextStyle {
+        switch self {
+        case .largeTitle: return .largeTitle
+        case .title: return .title1
+        case .title2: return .title2
+        case .title3: return .title3
+        case .headline: return .headline
+        case .body: return .body
+        case .callout: return .callout
+        case .subheadline: return .subheadline
+        case .footnote: return .footnote
+        case .caption: return .caption1
+        case .caption2: return .caption2
+        @unknown default: return .body
+        }
+    }
 }
